@@ -33,7 +33,8 @@ def _index_to_24h_time(index: int) -> str:
     minute = int((index % 2) * 30)
     return f"{hour:02d}:{minute:02d}"
 
-def setup_decision_variables(center_hours: pd.DataFrame, staff_child: pd.DataFrame) -> ConcreteModel:
+def setup_decision_variables(center_hours: pd.DataFrame, staff_child: pd.DataFrame,
+                             day: str) -> ConcreteModel:
     """
     Load center hours
     Load child x staff mapping
@@ -42,6 +43,7 @@ def setup_decision_variables(center_hours: pd.DataFrame, staff_child: pd.DataFra
     Args:
         center_hours (pd.DataFrame): DataFrame containing center hours.
         staff_child (pd.DataFrame): DataFrame containing staff-child relationships.
+        day (str): The day for which the model is being set up.
 
     Returns:
         ConcreteModel: A Pyomo model object with the loaded data.
@@ -50,7 +52,7 @@ def setup_decision_variables(center_hours: pd.DataFrame, staff_child: pd.DataFra
     # For example, you might want to merge or filter the data
 
     model = ConcreteModel()
-    model.CENTER_HOURS = center_hours
+    model.CENTER_HOURS = center_hours.query(f"Day == '{day}'")
     model.STAFF_CHILD = staff_child
 
     # Define the junior and senior staff
@@ -60,6 +62,7 @@ def setup_decision_variables(center_hours: pd.DataFrame, staff_child: pd.DataFra
     # Create decision variables for the model
     model.CHILDREN = model.STAFF_CHILD.Child.unique()
     model.STAFF = model.STAFF_CHILD.Staff.unique()
+
     # Staff role todo
     model.DAYS = model.CENTER_HOURS.Day
     first_start = model.CENTER_HOURS.Open.min()
@@ -234,10 +237,13 @@ def add_lunch_constraints(model: ConcreteModel) -> ConcreteModel:
     model.lunch_constraints = ConstraintList()
     for day in model.DAYS:
         for staff in model.STAFF:
-            # Add constraints to the model
+            time_range_req = [x for x in list(range(lunch_start, lunch_end))
+                              if x in model.TIME_BLOCKS]
+            if len(time_range_req) == 0:
+                continue
             model.lunch_constraints.add(
                 expr=sum(model.X[day, time_block, child, staff]
-                         for time_block in range(lunch_start, lunch_end)
+                         for time_block in time_range_req
                          for child in model.CHILDREN) <= span - 1
             )
     return model
@@ -403,12 +409,7 @@ def print_solution(model: ConcreteModel) -> pd.DataFrame:
         results_df
         .pivot(index=["Day", "Time Block"], columns = "Staff", values = "Child")
         .reset_index()
-    )
-    # Go in order of days
-    final_res = pd.concat([
-        results_df_wide
-        .pipe(lambda x: x[x.Day == d])
         .sort_values("Time Block")
-        for d in ["Mon", "Tue", "Wed", "Thu", "Fri"]
-    ]).assign(**{"Time Block": lambda x: x["Time Block"].apply(_index_to_24h_time)})
-    return final_res
+        .assign(**{"Time Block": lambda x: x["Time Block"].apply(_index_to_24h_time)})
+    )
+    return results_df_wide

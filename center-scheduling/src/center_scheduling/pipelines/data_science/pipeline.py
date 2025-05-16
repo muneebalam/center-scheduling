@@ -2,14 +2,18 @@ from kedro.pipeline import Pipeline, node, pipeline
 
 from .nodes import *
 
-# TODO solve one day at a time
-def create_pipeline(**kwargs) -> Pipeline:
+def _base_opt_pipeline(day: int) -> Pipeline:
+    """
+    Base pipeline for the optimization of the center schedule.
+    """
+
+    # Define the pipeline
     return pipeline(
         [
             # Data
             node(
                 func = setup_decision_variables,
-                inputs = ["center_hours", "staff_child"],
+                inputs = ["center_hours", "staff_child", "params:day"],
                 outputs = "base_model",
             ),
 
@@ -96,5 +100,11 @@ def create_pipeline(**kwargs) -> Pipeline:
                 inputs = "model_solved",
                 outputs = "solution_excel",
             ),
-        ]
+        ],
+        parameters={"params:day": f"params:day{day}"},
+        inputs = {c: c for c in ["center_hours", "staff_child"]},
+        namespace=f"d{day}",
     )
+
+def create_pipeline(**kwargs) -> Pipeline:
+    return pipeline([_base_opt_pipeline(day=d) for d in range(1, 6)])
