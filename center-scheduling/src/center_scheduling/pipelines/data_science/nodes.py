@@ -19,6 +19,19 @@ def _24h_time_to_index(time: str) -> int:
     """
     hour, minute, sec = map(int, str(time).split(':'))
     return int(hour * 2 + minute / 30)
+def _index_to_24h_time(index: int) -> str:
+    """
+    Convert an index to a 24-hour time string.
+
+    Args:
+        index (int): Index corresponding to the time.
+
+    Returns:
+        str: Time in 24-hour format (e.g., "14:30").
+    """
+    hour = int(index // 2)
+    minute = int((index % 2) * 30)
+    return f"{hour:02d}:{minute:02d}"
 
 def setup_decision_variables(center_hours: pd.DataFrame, staff_child: pd.DataFrame) -> ConcreteModel:
     """
@@ -39,6 +52,10 @@ def setup_decision_variables(center_hours: pd.DataFrame, staff_child: pd.DataFra
     model = ConcreteModel()
     model.CENTER_HOURS = center_hours
     model.STAFF_CHILD = staff_child
+
+    # Define the junior and senior staff
+    model.JSTAFF = model.STAFF_CHILD.query("Role == 'Tech'")["Staff"].unique()
+    model.SSTAFF = model.STAFF_CHILD.query("Role != 'Tech'")["Staff"].unique()
 
     # Create decision variables for the model
     model.CHILDREN = model.STAFF_CHILD.Child.unique()
@@ -118,6 +135,8 @@ def add_one_place_per_time_constraint(model: ConcreteModel) -> ConcreteModel:
                 )
     return model
 
+# Indicators ------------------------------------------------------------------
+
 def add_child_no_staff_indicator(model: ConcreteModel) -> ConcreteModel:
     """
     Add a constraint to indicate when a child does not have staff.
@@ -146,6 +165,148 @@ def add_child_no_staff_indicator(model: ConcreteModel) -> ConcreteModel:
                 )
     return model
 
+def add_junior_staff_constraints(model: ConcreteModel) -> ConcreteModel:
+    """
+    Add constraints to ensure that junior staff are not assigned to children.
+
+    Args:
+        model (ConcreteModel): The Pyomo model to which the constraints will be added.
+
+    Returns:
+        ConcreteModel: The model with the constraints added.
+    """
+    model.junior_staff_constraints = ConstraintList()
+    for day in model.DAYS:
+        for time_block in model.TIME_BLOCKS:
+            for child in model.CHILDREN:
+                model.junior_staff_constraints.add(
+                    expr=sum([
+                        model.X[day, time_block, child, staff] 
+                        for staff in model.JSTAFF
+                    ]) <= 1
+                )
+    return model
+
+
+def add_child_2_staff_indicator(model: ConcreteModel) -> ConcreteModel:
+    """
+    Add a constraint to indicate when a child has two staff.
+
+    Args:
+        model (ConcreteModel): The Pyomo model to which the constraint will be added.
+
+    Returns:
+        ConcreteModel: The model with the constraint added.
+    """
+    model.z_child_2_staff_hrs = Var(model.DAYS, 
+                                     model.TIME_BLOCKS, 
+                                     model.CHILDREN,
+                                     within=Binary)
+    
+    model.child_2_staff_constraints = ConstraintList()
+    for day in model.DAYS:
+        for time_block in model.TIME_BLOCKS:
+            for child in model.CHILDREN:
+                n_staff = sum(model.X[day, time_block, child, staff]
+                              for staff in model.STAFF)
+                # if n_staff == 2, then z_child_2_staff_hrs = 1
+                # else, z_child_2_staff_hrs = 0
+                model.child_2_staff_constraints.add(
+                    expr= n_staff <= model.z_child_2_staff_hrs[day, time_block, child] + 1
+                )
+    return model
+
+def add_lunch_constraints(model: ConcreteModel) -> ConcreteModel:
+    """
+    Add constraints to ensure that lunch is scheduled for each staff member between 12 and 2.
+
+    Args:
+        model (ConcreteModel): The Pyomo model to which the constraints will be added.
+
+    Returns:
+        ConcreteModel: The model with the constraints added.
+    """
+    # Define the lunch time range
+    lunch_start = _24h_time_to_index("12:00:00")
+    lunch_end = _24h_time_to_index("14:00:00")
+    span = lunch_end - lunch_start
+
+    model.lunch_constraints = ConstraintList()
+    for day in model.DAYS:
+        for staff in model.STAFF:
+            # Add constraints to the model
+            model.lunch_constraints.add(
+                expr=sum(model.X[day, time_block, child, staff]
+                         for time_block in range(lunch_start, lunch_end)
+                         for child in model.CHILDREN) <= span - 1
+            )
+    return model
+
+def add_staff_not_fully_used_indicator(model: ConcreteModel) -> ConcreteModel:
+    """
+    Add a constraint to indicate when a staff is not fully used.
+
+    Args:
+        model (ConcreteModel): The Pyomo model to which the constraint will be added.
+
+    Returns:
+        ConcreteModel: The model with the constraint added.
+    """
+    return model
+    model.z_staff_not_fully_used = Var(model.DAYS, 
+                                        model.TIME_BLOCKS, 
+                                        model.STAFF,
+                                        within=Binary)
+    
+    model.staff_not_fully_used_constraints = ConstraintList()
+    for day in model.DAYS:
+        for time_block in model.TIME_BLOCKS:
+            for staff in model.STAFF:
+                empty_time_blocks = sum(1 - model.X[day, time_block, child, staff]
+                                        for child in model.CHILDREN)
+                # if empty time blocks = 1, then z_staff_not_fully_used = 1
+                # else, z_staff_not_fully_used = 0
+                model.staff_not_fully_used_constraints.add(
+                    expr= empty_time_blocks >= (1 - model.z_staff_not_fully_used[day, time_block, staff])
+                )
+    return model
+
+def add_switch_indicator(model: ConcreteModel) -> ConcreteModel:
+    """
+    Add a constraint to indicate when a staff switches between children.
+
+    Args:
+        model (ConcreteModel): The Pyomo model to which the constraint will be added.
+
+    Returns:
+        ConcreteModel: The model with the constraint added.
+    """
+    model.z_switch = Var(model.DAYS, 
+                         model.TIME_BLOCKS, 
+                         model.STAFF,
+                         within=Binary)
+    
+    model.switch_constraints = ConstraintList()
+    for day in model.DAYS:
+        for time_block in model.TIME_BLOCKS:
+            next_time_block = time_block + 1
+            if next_time_block > max(model.TIME_BLOCKS):
+                continue
+            for child in model.CHILDREN:
+                for staff in model.STAFF:
+                    # if staff switches between children, then z_switch = 1
+                    # else, z_switch = 0
+                    mydiff = model.X[day, time_block, child, staff] - model.X[day, next_time_block, child, staff]
+                    model.switch_constraints.add(
+                        expr = mydiff <= model.z_switch[day, time_block, staff]
+                    )
+                    model.switch_constraints.add(
+                        expr = -1 * mydiff <= model.z_switch[day, time_block, staff]
+                    )
+    return model
+
+# Objective and solve -----------------------------------------------------------------
+
 def add_objective(model: ConcreteModel) -> ConcreteModel:
     """
     Add an objective function to the model.
@@ -157,19 +318,40 @@ def add_objective(model: ConcreteModel) -> ConcreteModel:
         ConcreteModel: The model with the objective function added.
     """
     # Define the objective function
-    # Maximize child hours
-    child_staff_hrs = sum([model.X[day, time_block, child, staff]
+    # Maximize child hours - preference to techs though
+    child_jstaff_hrs = sum([model.X[day, time_block, child, staff]
                                           for day in model.DAYS
                                           for time_block in model.TIME_BLOCKS
                                           for child in model.CHILDREN
-                                          for staff in model.STAFF])
+                                          for staff in model.JSTAFF])
+    child_sstaff_hrs = sum([model.X[day, time_block, child, staff]
+                                          for day in model.DAYS
+                                          for time_block in model.TIME_BLOCKS
+                                          for child in model.CHILDREN
+                                          for staff in model.SSTAFF])
     # Penalize when children do not have staff
     child_no_staff_hrs = sum([model.z_child_no_staff[day, time_block, child]
                                           for day in model.DAYS
                                           for time_block in model.TIME_BLOCKS
                                           for child in model.CHILDREN])
+    
+    # Penalize when children have two staff
+    child_2_staff_hrs = sum([model.z_child_2_staff_hrs[day, time_block, child]
+                                          for day in model.DAYS
+                                          for time_block in model.TIME_BLOCKS
+                                          for child in model.CHILDREN])
+    # Penalize switches
+    child_switch_hrs = sum([model.z_switch[day, time_block, staff]
+                                          for day in model.DAYS
+                                          for time_block in model.TIME_BLOCKS
+                                          for staff in model.STAFF])
+
                     
-    model.objective = Objective(expr=child_staff_hrs - child_no_staff_hrs, 
+    model.objective = Objective(expr=child_jstaff_hrs
+                                + child_sstaff_hrs * 0.5 
+                                - child_no_staff_hrs 
+                                - child_2_staff_hrs
+                                - child_switch_hrs * 0.1, 
                                 sense=maximize)
     return model
 
@@ -197,7 +379,7 @@ def solve(model: ConcreteModel) -> ConcreteModel:
 
     return model
 
-def print_solution(model: ConcreteModel) -> None:
+def print_solution(model: ConcreteModel) -> pd.DataFrame:
     """
     Print the solution of the model.
 
@@ -210,7 +392,6 @@ def print_solution(model: ConcreteModel) -> None:
         for time_block in model.TIME_BLOCKS:
             for child in model.CHILDREN:
                 for staff in model.STAFF:
-                    logger.info(f"{day} {time_block} {child} {staff}")
                     if model.X[day, time_block, child, staff].value > 0:
                         results_df = pd.concat([results_df, pd.DataFrame({
                             "Day": [day],
@@ -220,10 +401,14 @@ def print_solution(model: ConcreteModel) -> None:
                         })], ignore_index=True)
     results_df_wide = (
         results_df
-        .groupby(["Day", "Time Block", "Child"])
-        ["Staff"].apply(lambda x: ",".join(x))
-        .reset_index()
-        .pivot(index=["Child", "Day"], columns = "Time Block", values = "Staff")
+        .pivot(index=["Day", "Time Block"], columns = "Staff", values = "Child")
         .reset_index()
     )
-    return results_df_wide
+    # Go in order of days
+    final_res = pd.concat([
+        results_df_wide
+        .pipe(lambda x: x[x.Day == d])
+        .sort_values("Time Block")
+        for d in ["Mon", "Tue", "Wed", "Thu", "Fri"]
+    ]).assign(**{"Time Block": lambda x: x["Time Block"].apply(_index_to_24h_time)})
+    return final_res
