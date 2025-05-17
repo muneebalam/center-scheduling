@@ -30,7 +30,9 @@ def _clean_start_end(model: ConcreteModel, row: pd.Series) -> tuple[int, int]:
     end = min(end, max(model.TIME_BLOCKS))
     return int(start), int(end)
 
-def add_pto_constraints(model: ConcreteModel) -> ConcreteModel:
+def add_pto_constraints(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
+    if not constraint_on_off["pto"]:
+        return model
     model.pto_constraints = ConstraintList()
     pto = model.ABSENCES.pipe(lambda x: x[x.Type == "PTO"])[["Name", "Day", "Start", "End"]]
     for _, row in pto.iterrows():
@@ -44,7 +46,9 @@ def add_pto_constraints(model: ConcreteModel) -> ConcreteModel:
         )
     return model
 
-def add_parent_training_constraints(model: ConcreteModel) -> ConcreteModel:
+def add_parent_training_constraints(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
+    if not constraint_on_off["parent_training"]:
+        return model
     model.parent_training_constraints = ConstraintList()
     parent_training = model.ABSENCES.pipe(lambda x: x[x.Type.str.title() == "Parent Training"])[["Name", "Day", "Start", "End"]]
     for _, row in parent_training.iterrows():
@@ -56,7 +60,9 @@ def add_parent_training_constraints(model: ConcreteModel) -> ConcreteModel:
         )
     return model
 
-def add_team_meeting_constraints(model: ConcreteModel) -> ConcreteModel:
+def add_team_meeting_constraints(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
+    if not constraint_on_off["team_meeting"]:
+        return model
     model.team_meeting_constraints = ConstraintList()
     team_meeting = model.ABSENCES.pipe(lambda x: x[x.Type.str.title() == "Team Meeting"])[["Name", "Day", "Start", "End"]]
     for _, row in team_meeting.iterrows():
@@ -71,7 +77,9 @@ def add_team_meeting_constraints(model: ConcreteModel) -> ConcreteModel:
         )
     return model
 
-def add_nap_time_constraints(model: ConcreteModel) -> ConcreteModel:
+def add_nap_time_constraints(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
+    if not constraint_on_off["nap_time"]:
+        return model
     model.nap_time_constraints = ConstraintList()
     nap_rows = model.ABSENCES.pipe(lambda x: x[x.Type.str.title() == "Nap"])[["Name", "Day", "Start", "End"]]
     for _, row in nap_rows.iterrows():
@@ -85,7 +93,9 @@ def add_nap_time_constraints(model: ConcreteModel) -> ConcreteModel:
         )
     return model
 
-def add_speech_therapy_constraints(model: ConcreteModel) -> ConcreteModel:
+def add_speech_therapy_constraints(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
+    if not constraint_on_off["speech_therapy"]:
+        return model
     model.speech_constraints = ConstraintList()
     speech_therapy = model.ABSENCES.pipe(lambda x: x[x.Type.str.title() == "Speech"])[["Name", "Day", "Start", "End"]]
     for _, row in speech_therapy.iterrows():
@@ -99,10 +109,12 @@ def add_speech_therapy_constraints(model: ConcreteModel) -> ConcreteModel:
         )
     return model
 
-def add_arrival_departure_constraints(model: ConcreteModel) -> ConcreteModel:
+def add_arrival_departure_constraints(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
     """
     Take kids who arrive late and leave early into account
     """
+    if not constraint_on_off["arrival_departure"]:
+        return model
     arr_dep = (
         model.ABSENCES
         .pipe(lambda x: x[x.Type.str.lower().isin(["late arrival", "leaves early"])])
@@ -120,7 +132,7 @@ def add_arrival_departure_constraints(model: ConcreteModel) -> ConcreteModel:
         )
     return model
 
-def center_hours_constraints(model: ConcreteModel) -> ConcreteModel:
+def center_hours_constraints(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
     """
     Add constraints to ensure that the center is open during specified hours.
 
@@ -130,6 +142,8 @@ def center_hours_constraints(model: ConcreteModel) -> ConcreteModel:
     Returns:
         ConcreteModel: The model with the constraints added.
     """
+    if not constraint_on_off["center_hours"]:
+        return model
     model.center_hours_constraints = ConstraintList()
     for _, row in model.CENTER_HOURS.iterrows():
         day = row["Day"]
@@ -145,7 +159,9 @@ def center_hours_constraints(model: ConcreteModel) -> ConcreteModel:
                 )
     return model
 
-def add_staff_child_constraints(model: ConcreteModel) -> ConcreteModel:
+def add_staff_child_constraints(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
+    if not constraint_on_off["staff_child"]:
+        return model
     model.staff_child_constraints = ConstraintList()
     for child, staff_df in model.STAFF_CHILD.groupby("Child"):
         acceptable_staff = staff_df.Staff
@@ -158,7 +174,7 @@ def add_staff_child_constraints(model: ConcreteModel) -> ConcreteModel:
                 )
     return model
 
-def add_one_place_per_time_constraint(model: ConcreteModel) -> ConcreteModel:
+def add_one_place_per_time_constraint(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
     """
     Add a constraint to ensure that each staff is in one place at a time.
 
@@ -168,6 +184,8 @@ def add_one_place_per_time_constraint(model: ConcreteModel) -> ConcreteModel:
     Returns:
         ConcreteModel: The model with the constraint added.
     """
+    if not constraint_on_off["one_place_per_time"]:
+        return model
     model.one_place_per_time = ConstraintList()
     for time_block in model.TIME_BLOCKS:
         for staff in model.STAFF:
@@ -178,28 +196,8 @@ def add_one_place_per_time_constraint(model: ConcreteModel) -> ConcreteModel:
             )
     return model
 
-def add_junior_staff_constraints(model: ConcreteModel) -> ConcreteModel:
-    """
-    Add constraints to ensure that junior staff are not assigned to children.
 
-    Args:
-        model (ConcreteModel): The Pyomo model to which the constraints will be added.
-
-    Returns:
-        ConcreteModel: The model with the constraints added.
-    """
-    model.junior_staff_constraints = ConstraintList()
-    for time_block in model.TIME_BLOCKS:
-        for child in model.CHILDREN:
-            model.junior_staff_constraints.add(
-                expr=sum([
-                        model.X[time_block, child, staff] 
-                        for staff in model.JSTAFF
-                    ]) <= 1
-                )
-    return model
-
-def add_lunch_constraints(model: ConcreteModel) -> ConcreteModel:
+def add_lunch_constraints(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
     """
     Add constraints to ensure that lunch is scheduled for each staff member between 12 and 2.
 
@@ -209,8 +207,10 @@ def add_lunch_constraints(model: ConcreteModel) -> ConcreteModel:
     Returns:
         ConcreteModel: The model with the constraints added.
     """
+    if not constraint_on_off["lunch"]:
+        return model
     # Define the lunch time range
-    lunch_start = _24h_time_to_index(12)
+    lunch_start = _24h_time_to_index(11.5)
     lunch_end = _24h_time_to_index(14)
     span = lunch_end - lunch_start
 

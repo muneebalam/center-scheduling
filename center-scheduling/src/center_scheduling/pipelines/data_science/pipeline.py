@@ -31,13 +31,13 @@ def _base_opt_pipeline(day: int) -> Pipeline:
             ## Center hours
             node(
                 func = center_hours_constraints,
-                inputs = "base_model",
+                inputs = ["base_model", "params:constraint_on_off"],
                 outputs = "model_c0",
             ),
             ## Staff x child matching
             node(
                 func = add_staff_child_constraints,
-                inputs = "model_c0",
+                inputs = ["model_c0", "params:constraint_on_off"],
                 outputs = "model_c1",
             ),
             ## Assessments (TBC)
@@ -46,55 +46,49 @@ def _base_opt_pipeline(day: int) -> Pipeline:
             ## Each staff and child in one place at a time
             node(
                 func = add_one_place_per_time_constraint,
-                inputs = "model_c1",
+                inputs = ["model_c1", "params:constraint_on_off"],
                 outputs = "model_c2",
             ),
             ## Lunch
             node(
                 func = add_lunch_constraints,
-                inputs = "model_c2",
+                inputs = ["model_c2", "params:constraint_on_off"],
                 outputs = "model_c3",
-            ),
-            ## At most one junior staff per child
-            node(
-                func = add_junior_staff_constraints,
-                inputs = "model_c3",
-                outputs = "model_c4",
             ),
             ## PTO
             node(
                 func = add_pto_constraints,
-                inputs = "model_c4",
+                inputs = ["model_c3", "params:constraint_on_off"],
                 outputs = "model_c42",
             ),
             ## Parent training
             node(
                 func = add_parent_training_constraints,
-                inputs = "model_c42",
+                inputs = ["model_c42", "params:constraint_on_off"],
                 outputs = "model_c43",
             ),
             ## Team meeting
             node(
                 func = add_team_meeting_constraints,
-                inputs = "model_c43",
+                inputs = ["model_c43", "params:constraint_on_off"],
                 outputs = "model_c44",
             ),
             ## Nap
             node(
                 func = add_nap_time_constraints,
-                inputs = "model_c44",
+                inputs = ["model_c44", "params:constraint_on_off"],
                 outputs = "model_c45",
             ),
             ## Therapy
             node(
                 func = add_speech_therapy_constraints,
-                inputs = "model_c45",
+                inputs = ["model_c45", "params:constraint_on_off"],
                 outputs = "model_c46",
             ),
             ## Late arrivals, early departures
             node(
                 func = add_arrival_departure_constraints,
-                inputs = "model_c46",
+                inputs = ["model_c46", "params:constraint_on_off"],
                 outputs = "model_c47",
             ),
             
@@ -141,7 +135,8 @@ def _base_opt_pipeline(day: int) -> Pipeline:
                 outputs = "solution_excel",
             ),
         ],
-        parameters={"params:day": f"params:day{day}", "params:reward_for_child_staff_role": "params:reward_for_child_staff_role"},
+        parameters={"params:day": f"params:day{day}",
+                    **{c: c for c in ["params:reward_for_child_staff_role", "params:constraint_on_off"]}},
         inputs = {c: c for c in ["center_hours", "staff_child", "absences","roles"]},
         namespace=f"d{day}",
     )

@@ -10,3 +10,16 @@ reward_for_child_staff_role:
   TS: 0.6
   SBA: 0.4
   OM: 0.2
+
+constraint_on_off:
+  center_hours: True
+  staff_child: True
+  one_place_per_time: True
+  # Lunch adds runtime. Need to simplify. For now, should add heuristically
+  lunch: False
+  pto: True
+  parent_training: True
+  team_meeting: True
+  nap_time: True
+  speech_therapy: True
+  arrival_departure: True
