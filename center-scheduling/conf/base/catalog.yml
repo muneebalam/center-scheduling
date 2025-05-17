@@ -60,6 +60,42 @@ absences:
     engine: openpyxl
     sheet_name: "absences"
 
+d1.model_index:
+  type: pandas.CSVDataset
+  filepath: data/02_intermediate/d1_model_index.csv
+  save_args:
+    index: False
+    sep: ","
+    header: True
+d3.model_index:
+  type: pandas.CSVDataset
+  filepath: data/02_intermediate/d3_model_index.csv
+  save_args:
+    index: False
+    sep: ","
+    header: True
+d2.model_index:
+  type: pandas.CSVDataset
+  filepath: data/02_intermediate/d2_model_index.csv
+  save_args:
+    index: False
+    sep: ","
+    header: True
+d4.model_index:
+  type: pandas.CSVDataset
+  filepath: data/02_intermediate/d4_model_index.csv
+  save_args:
+    index: False
+    sep: ","
+    header: True
+d5.model_index:
+  type: pandas.CSVDataset
+  filepath: data/02_intermediate/d5_model_index.csv
+  save_args:
+    index: False
+    sep: ","
+    header: True
+
 d1.solution_excel:
   type: pandas.CSVDataset
   filepath: data/08_reporting/d1_solution.csv

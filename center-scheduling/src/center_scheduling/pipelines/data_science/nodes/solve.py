@@ -43,13 +43,12 @@ def print_solution(model: ConcreteModel) -> pd.DataFrame:
     """
     # Iterate through the decision variables and print their values
     results_df = pd.DataFrame({}, columns=["Day", "Time Block", "Child", "Staff"])
-    for day in model.DAYS:
-        for time_block in model.TIME_BLOCKS:
-            for child in model.CHILDREN:
-                for staff in model.STAFF:
-                    if model.X[day, time_block, child, staff].value > 0:
+    for time_block in model.TIME_BLOCKS:
+        for child in model.CHILDREN:
+            for staff in model.STAFF:
+                if model.X[time_block, child, staff].value > 0:
                         results_df = pd.concat([results_df, pd.DataFrame({
-                            "Day": [day],
+                            "Day": [model.DAY],
                             "Time Block": [time_block],
                             "Child": [child],
                             "Staff": [staff]

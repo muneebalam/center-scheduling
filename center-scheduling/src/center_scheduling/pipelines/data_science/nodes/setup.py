@@ -19,6 +19,11 @@ def _24h_time_to_index(time: str) -> int:
     """
     #hour, minute, sec = map(int, str(time).split(':'))
     #return int(hour * 2 + minute / 30)
+    try:
+        time = float(time)
+        return int(time * 2)
+    except ValueError:
+        pass
     if isinstance(time, pd.Timestamp):
         hr = time.hour
         minute = time.minute
@@ -27,6 +32,7 @@ def _24h_time_to_index(time: str) -> int:
         hr = int(time.split(':')[0])
         minute = int(time.split(':')[1])
         return int(hr * 2 + minute / 30)
+    
     return time * 2
 
 
@@ -78,16 +84,29 @@ def setup_decision_variables(center_hours: pd.DataFrame,
     model.STAFF = model.STAFF_CHILD.Staff.unique()
 
     # Staff role todo
-    model.DAYS = model.CENTER_HOURS.Day
+    model.DAY = model.CENTER_HOURS.Day.iloc[0]
     first_start = model.CENTER_HOURS.Open.min()
     last_end = model.CENTER_HOURS.Close.max()
     model.TIME_BLOCKS = range(_24h_time_to_index(first_start), 
                                   _24h_time_to_index(last_end))
-    model.X = Var(model.DAYS, 
-                  model.TIME_BLOCKS, 
+    model.X = Var(model.TIME_BLOCKS, 
                   model.CHILDREN,
                   model.STAFF,
                   within=Binary)
 
     # Return the processed data
     return model
+
+def save_model_index(model: ConcreteModel) -> pd.DataFrame:
+    data = []
+    for time_block in model.TIME_BLOCKS:
+        for child in model.CHILDREN:
+            for staff in model.STAFF:
+                data.append({
+                    "Day": model.DAY,
+                    "Time Block": time_block,
+                    "Child": child,
+                    "Staff": staff,
+                })
+    return pd.DataFrame.from_records(data)
+                    

@@ -16,6 +16,11 @@ def _base_opt_pipeline(day: int) -> Pipeline:
                 inputs = ["center_hours", "staff_child", "absences","params:day"],
                 outputs = "base_model",
             ),
+            node(
+                func=save_model_index,
+                inputs="base_model",
+                outputs="model_index",
+            ),
 
             # Constraints
             ## Center hours
