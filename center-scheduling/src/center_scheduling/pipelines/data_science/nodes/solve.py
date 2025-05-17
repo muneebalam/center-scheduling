@@ -7,6 +7,7 @@ from pyomo.environ import (
     ConstraintList, maximize
 )
 
+from .setup import _24h_time_to_index, _index_to_24h_time
 
 
 def solve(model: ConcreteModel) -> ConcreteModel:
