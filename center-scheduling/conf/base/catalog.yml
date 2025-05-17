@@ -53,6 +53,49 @@ staff_child:
     engine: openpyxl
     sheet_name: "staff_child"
 
+absences:
+  type: pandas.ExcelDataset
+  filepath: data/01_raw/center_data.xlsx
+  load_args:
+    engine: openpyxl
+    sheet_name: "absences"
+
+d1.solution_excel:
+  type: pandas.CSVDataset
+  filepath: data/08_reporting/d1_solution.csv
+  save_args:
+    index: False
+    sep: ","
+    header: True
+d2.solution_excel:
+  type: pandas.CSVDataset
+  filepath: data/08_reporting/d2_solution.csv
+  save_args:
+    index: False
+    sep: ","
+    header: True
+d3.solution_excel:
+  type: pandas.CSVDataset
+  filepath: data/08_reporting/d3_solution.csv
+  save_args:
+    index: False
+    sep: ","
+    header: True
+d4.solution_excel:
+  type: pandas.CSVDataset
+  filepath: data/08_reporting/d4_solution.csv
+  save_args:
+    index: False
+    sep: ","
+    header: True
+d5.solution_excel:
+  type: pandas.CSVDataset
+  filepath: data/08_reporting/d5_solution.csv
+  save_args:
+    index: False
+    sep: ","
+    header: True
+
 solution_excel:
   type: pandas.CSVDataset
   filepath: data/08_reporting/solution.csv

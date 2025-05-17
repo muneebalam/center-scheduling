@@ -33,7 +33,9 @@ def _index_to_24h_time(index: int) -> str:
     minute = int((index % 2) * 30)
     return f"{hour:02d}:{minute:02d}"
 
-def setup_decision_variables(center_hours: pd.DataFrame, staff_child: pd.DataFrame,
+def setup_decision_variables(center_hours: pd.DataFrame, 
+                             staff_child: pd.DataFrame,
+                             absences: pd.DataFrame,
                              day: str) -> ConcreteModel:
     """
     Load center hours
@@ -54,7 +56,8 @@ def setup_decision_variables(center_hours: pd.DataFrame, staff_child: pd.DataFra
     model = ConcreteModel()
     model.CENTER_HOURS = center_hours.query(f"Day == '{day}'")
     model.STAFF_CHILD = staff_child
-
+    model.ABSENCES = absences.pipe(lambda x: x[(x.Day.isna()) | (x.Day == day)])
+    
     # Define the junior and senior staff
     model.JSTAFF = model.STAFF_CHILD.query("Role == 'Tech'")["Staff"].unique()
     model.SSTAFF = model.STAFF_CHILD.query("Role != 'Tech'")["Staff"].unique()
@@ -76,6 +79,24 @@ def setup_decision_variables(center_hours: pd.DataFrame, staff_child: pd.DataFra
                   within=Binary)
 
     # Return the processed data
+    return model
+
+def add_pto_constraints(model: ConcreteModel) -> ConcreteModel:
+    model.pto_constraints = ConstraintList()
+    pto = model.ABSENCES.pipe(lambda x: x[x.Type == "PTO"])[["Name", "Start", "End"]]
+    for _, row in pto.iterrows():
+        start = row["Start"]
+        end = row["End"]
+        if start is None:
+            start = min(model.TIME_BLOCKS)
+        if end is None:
+            end = max(model.TIME_BLOCKS)
+        for i in range(start, end):
+            model.pto_constraints.add(
+                expr=sum(model.X[day, i, child, row["Name"]]
+                         for day in model.DAYS
+                         for child in model.CHILDREN) == 0
+            )
     return model
 
 def center_hours_constraints(model: ConcreteModel) -> ConcreteModel:

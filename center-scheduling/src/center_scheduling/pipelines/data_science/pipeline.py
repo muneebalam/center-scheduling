@@ -13,7 +13,7 @@ def _base_opt_pipeline(day: int) -> Pipeline:
             # Data
             node(
                 func = setup_decision_variables,
-                inputs = ["center_hours", "staff_child", "params:day"],
+                inputs = ["center_hours", "staff_child", "absences","params:day"],
                 outputs = "base_model",
             ),
 
@@ -34,7 +34,6 @@ def _base_opt_pipeline(day: int) -> Pipeline:
             ## 1:1 trainings (TBC)
             ## Admin (TBC)
             ## Nap time
-            ## Up to 1 senior staff per child per 30min (TBC)
             ## Each staff and child in one place at a time
             node(
                 func = add_one_place_per_time_constraint,
@@ -53,17 +52,21 @@ def _base_opt_pipeline(day: int) -> Pipeline:
                 inputs = "model_c3",
                 outputs = "model_c4",
             ),
+            ## PTO
+            node(
+                func = add_pto_constraints,
+                inputs = "model_c4",
+                outputs = "model_c42",
+            ),
             
-            ## Unavailability: Staff training, PTO, Parent training, Team meeting
-            ## Remote day: can be a second on a child, not the only one
-            ## Restrictions - e.g. staff training on a kid
+            ## Unavailability: Staff training, PTO, Parent training, remote, Team meeting
 
             
 
             ## Indicators
             node(
                 func = add_child_no_staff_indicator,
-                inputs = "model_c4",
+                inputs = "model_c42",
                 outputs = "model_c5",
             ),
             node(
@@ -102,7 +105,7 @@ def _base_opt_pipeline(day: int) -> Pipeline:
             ),
         ],
         parameters={"params:day": f"params:day{day}"},
-        inputs = {c: c for c in ["center_hours", "staff_child"]},
+        inputs = {c: c for c in ["center_hours", "staff_child", "absences"]},
         namespace=f"d{day}",
     )
 
