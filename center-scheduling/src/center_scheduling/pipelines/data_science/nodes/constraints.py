@@ -99,6 +99,26 @@ def add_speech_therapy_constraints(model: ConcreteModel) -> ConcreteModel:
         )
     return model
 
+def add_arrival_departure_constraints(model: ConcreteModel) -> ConcreteModel:
+    """
+    Take kids who arrive late and leave early into account
+    """
+    arr_dep = (
+        model.ABSENCES
+        .pipe(lambda x: x[x.Type.str.lower().isin(["late arrival", "leaves early"])])
+        [["Name", "Start", "End"]]
+    )
+    model.arrival_departure_constraints = ConstraintList()
+    for _, row in arr_dep.iterrows():
+        start, end = _clean_start_end(model, row)
+        if start >= end:
+            continue
+        model.arrival_departure_constraints.add(
+            expr=sum(model.X[i, row["Name"], staff]
+                     for staff in model.STAFF
+                     for i in range(start, end)) == 0
+        )
+    return model
 
 def center_hours_constraints(model: ConcreteModel) -> ConcreteModel:
     """

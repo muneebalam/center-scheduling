@@ -7,6 +7,9 @@ from pyomo.environ import (
     ConstraintList, maximize
 )
 
+def _clean_names(names: pd.Series) -> pd.Series:
+    return names.str.strip().str.replace(" ", "").str.replace("_", "")
+
 def _24h_time_to_index(time: str) -> int:
     """
     Convert a 24-hour time string to an index.
@@ -50,9 +53,25 @@ def _index_to_24h_time(index: int) -> str:
     minute = int((index % 2) * 30)
     return f"{hour:02d}:{minute:02d}"
 
+def _add_sbt_ts_bs_to_staff_child(staff_child: pd.DataFrame, roles: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add SBT, TS, and BS to staff_child long matrix.
+    """
+    sbt_ts_bs = roles.pipe(lambda x: x[x.Role.isin(["SBT", "TS", "BS"])]).Name
+    unique_children = staff_child.Child.unique()
+    return pd.concat([
+        staff_child,
+        *[pd.DataFrame({
+            "Child": unique_children,
+            "Staff": s,
+        }) for s in sbt_ts_bs]
+    ])
+    
+
 def setup_decision_variables(center_hours: pd.DataFrame, 
                              staff_child: pd.DataFrame,
                              absences: pd.DataFrame,
+                             roles: pd.DataFrame,
                              day: str) -> ConcreteModel:
     """
     Load center hours
@@ -72,12 +91,27 @@ def setup_decision_variables(center_hours: pd.DataFrame,
 
     model = ConcreteModel()
     model.CENTER_HOURS = center_hours.query(f"Day == '{day}'")
-    model.STAFF_CHILD = staff_child
+    model.STAFF_CHILD_MATRIX = staff_child
+    model.STAFF_CHILD = (
+        staff_child
+        .melt(id_vars="Child", var_name="Staff", value_name="Allowed")
+        .pipe(lambda x: x[x.Allowed != ''])
+        .pipe(lambda x: x[~x.Allowed.isna()])
+        .assign(Child = lambda x: _clean_names(x.Child),
+        Staff = lambda x: _clean_names(x.Staff))
+        .drop(columns="Allowed")
+    )
+    
     model.ABSENCES = absences.pipe(lambda x: x[(x.Day.isna()) | (x.Day == day)])
+    model.ROLES = roles.assign(Name = lambda x: _clean_names(x.Name))
+    model.STAFF_CHILD = _add_sbt_ts_bs_to_staff_child(model.STAFF_CHILD, model.ROLES)
     
     # Define the junior and senior staff
-    model.JSTAFF = model.STAFF_CHILD.query("Role == 'Tech'")["Staff"].unique()
-    model.SSTAFF = model.STAFF_CHILD.query("Role != 'Tech'")["Staff"].unique()
+    model.JSTAFF = model.ROLES.pipe(lambda x: x[x.Role.isin(["Tech", "SBT"])])["Name"]
+    model.SSTAFF = model.ROLES.pipe(lambda x: x[~x.Role.isin(["Tech", "SBT"])])["Name"]
+    # Filter to make sure they should be scheduled
+    model.JSTAFF = [x for x in model.JSTAFF if x in model.STAFF_CHILD.Staff.unique()]
+    model.SSTAFF = [x for x in model.SSTAFF if x in model.STAFF_CHILD.Staff.unique()]
 
     # Create decision variables for the model
     model.CHILDREN = model.STAFF_CHILD.Child.unique()
@@ -110,3 +144,11 @@ def save_model_index(model: ConcreteModel) -> pd.DataFrame:
                 })
     return pd.DataFrame.from_records(data)
                     
+def input_sense_checks(model: ConcreteModel) -> ConcreteModel:
+    """Checks:
+    
+    1. All names in staff_child matrix are in roles
+    """
+    names_in_matrix_not_roles = {c for c in set(model.STAFF_CHILD.Staff) if c not in set(model.ROLES.Name)}
+    assert len(names_in_matrix_not_roles) == 0, f"Names in staff_child matrix not in roles: {names_in_matrix_not_roles}"
+    return model

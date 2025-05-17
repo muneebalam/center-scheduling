@@ -3,3 +3,10 @@ day2: Tue
 day3: Wed
 day4: Thu
 day5: Fri
+
+reward_for_child_staff_role:
+  tech: 1
+  SBT: 0.8
+  TS: 0.6
+  SBA: 0.4
+  OM: 0.2

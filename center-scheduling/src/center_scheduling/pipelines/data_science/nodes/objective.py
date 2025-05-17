@@ -11,7 +11,7 @@ from pyomo.environ import (
 
 # Objective and solve -----------------------------------------------------------------
 
-def add_objective(model: ConcreteModel) -> ConcreteModel:
+def add_objective(model: ConcreteModel, reward_for_child_staff_role: dict) -> ConcreteModel:
     """
     Add an objective function to the model.
 
@@ -23,18 +23,21 @@ def add_objective(model: ConcreteModel) -> ConcreteModel:
     """
     # Define the objective function
     # Maximize child hours - preference to techs though
-    child_jstaff_hrs = sum([model.X[time_block, child, staff]
+    child_hr_objs = {}
+    for role, reward in reward_for_child_staff_role.items():
+        relevant_staff = model.ROLES.pipe(lambda x: x[x.Role.str.lower() == role.lower()])["Name"]
+        relevant_staff = [x for x in relevant_staff if x in model.STAFF]
+        if len(relevant_staff) > 0:
+            child_hr_objs[role] = sum([model.X[time_block, child, staff]
                                           for time_block in model.TIME_BLOCKS
                                           for child in model.CHILDREN
-                                          for staff in model.JSTAFF])
-    child_sstaff_hrs = sum([model.X[time_block, child, staff]
-                                          for time_block in model.TIME_BLOCKS
-                                          for child in model.CHILDREN
-                                          for staff in model.SSTAFF])
+                                          for staff in relevant_staff]) * reward
+
     # Penalize when children do not have staff
-    child_no_staff_hrs = sum([model.z_child_no_staff[time_block, child]
-                                          for time_block in model.TIME_BLOCKS
-                                          for child in model.CHILDREN])
+    # may not be needed since obj maximizes children having staff
+   # child_no_staff_hrs = sum([model.z_child_no_staff[time_block, child]
+   #                                       for time_block in model.TIME_BLOCKS
+   #                                       for child in model.CHILDREN])
     
     # Penalize when children have two staff
     child_2_staff_hrs = sum([model.z_child_2_staff_hrs[time_block, child]
@@ -46,9 +49,7 @@ def add_objective(model: ConcreteModel) -> ConcreteModel:
                                           for staff in model.STAFF])
 
                     
-    model.objective = Objective(expr=child_jstaff_hrs
-                                + child_sstaff_hrs * 0.5 
-                                - child_no_staff_hrs 
+    model.objective = Objective(expr=sum(child_hr_objs.values())
                                 - child_2_staff_hrs
                                 - child_switch_hrs * 0.1, 
                                 sense=maximize)

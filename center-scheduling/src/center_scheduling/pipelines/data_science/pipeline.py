@@ -13,12 +13,17 @@ def _base_opt_pipeline(day: int) -> Pipeline:
             # Data
             node(
                 func = setup_decision_variables,
-                inputs = ["center_hours", "staff_child", "absences","params:day"],
+                inputs = ["center_hours", "staff_child", "absences","roles","params:day"],
                 outputs = "base_model",
             ),
             node(
+                func = input_sense_checks,
+                inputs = "base_model",
+                outputs = "base_model_checked",
+            ),
+            node(
                 func=save_model_index,
-                inputs="base_model",
+                inputs="base_model_checked",
                 outputs="model_index",
             ),
 
@@ -38,7 +43,6 @@ def _base_opt_pipeline(day: int) -> Pipeline:
             ## Assessments (TBC)
             ## 1:1 trainings (TBC)
             ## Admin (TBC)
-            ## Nap time
             ## Each staff and child in one place at a time
             node(
                 func = add_one_place_per_time_constraint,
@@ -75,25 +79,31 @@ def _base_opt_pipeline(day: int) -> Pipeline:
                 inputs = "model_c43",
                 outputs = "model_c44",
             ),
+            ## Nap
             node(
                 func = add_nap_time_constraints,
                 inputs = "model_c44",
                 outputs = "model_c45",
             ),
+            ## Therapy
             node(
                 func = add_speech_therapy_constraints,
                 inputs = "model_c45",
                 outputs = "model_c46",
             ),
+            ## Late arrivals, early departures
+            node(
+                func = add_arrival_departure_constraints,
+                inputs = "model_c46",
+                outputs = "model_c47",
+            ),
             
             ## Unavailability: Staff training, PTO, Parent training, remote, Team meeting
-
-            
 
             ## Indicators
             node(
                 func = add_child_no_staff_indicator,
-                inputs = "model_c46",
+                inputs = "model_c47",
                 outputs = "model_c5",
             ),
             node(
@@ -115,7 +125,7 @@ def _base_opt_pipeline(day: int) -> Pipeline:
             # Objective: Maximize child-staff hours
             node(
                 func = add_objective,
-                inputs = "model_c8",
+                inputs = ["model_c8", "params:reward_for_child_staff_role"],
                 outputs = "model_obj",
             ),
 
@@ -131,10 +141,11 @@ def _base_opt_pipeline(day: int) -> Pipeline:
                 outputs = "solution_excel",
             ),
         ],
-        parameters={"params:day": f"params:day{day}"},
-        inputs = {c: c for c in ["center_hours", "staff_child", "absences"]},
+        parameters={"params:day": f"params:day{day}", "params:reward_for_child_staff_role": "params:reward_for_child_staff_role"},
+        inputs = {c: c for c in ["center_hours", "staff_child", "absences","roles"]},
         namespace=f"d{day}",
     )
 
 def create_pipeline(**kwargs) -> Pipeline:
-    return pipeline([_base_opt_pipeline(day=d) for d in range(1, 6)])
+    myrange = range(1, 2)
+    return pipeline([_base_opt_pipeline(day=d) for d in myrange])

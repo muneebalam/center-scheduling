@@ -60,6 +60,13 @@ absences:
     engine: openpyxl
     sheet_name: "absences"
 
+roles:
+  type: pandas.ExcelDataset
+  filepath: data/01_raw/center_data.xlsx
+  load_args:
+    engine: openpyxl
+    sheet_name: "roles"
+
 d1.model_index:
   type: pandas.CSVDataset
   filepath: data/02_intermediate/d1_model_index.csv
