@@ -9,24 +9,84 @@ from pyomo.environ import (
 
 from .setup import _24h_time_to_index
 
+def _clean_start_end(model: ConcreteModel, row: pd.Series) -> tuple[int, int]:
+    start = row["Start"]
+    end = row["End"]
+    if start is None or pd.isna(start):
+        start = min(model.TIME_BLOCKS)
+    if end is None or pd.isna(end):
+        end = max(model.TIME_BLOCKS)
+    return int(start), int(end)
+
 def add_pto_constraints(model: ConcreteModel) -> ConcreteModel:
     model.pto_constraints = ConstraintList()
     pto = model.ABSENCES.pipe(lambda x: x[x.Type == "PTO"])[["Name", "Start", "End"]]
     for _, row in pto.iterrows():
-        start = row["Start"]
-        end = row["End"]
-        if start is None or pd.isna(start):
-            start = min(model.TIME_BLOCKS)
-        if end is None or pd.isna(end):
-            end = max(model.TIME_BLOCKS)
-        start = int(start)
-        end = int(end)
+        start, end = _clean_start_end(model, row)
         for i in range(start, end):
             model.pto_constraints.add(
                 expr=sum(model.X[day, i, child, row["Name"]]
                          for day in model.DAYS
                          for child in model.CHILDREN) == 0
             )
+    return model
+
+def add_parent_training_constraints(model: ConcreteModel) -> ConcreteModel:
+    model.parent_training_constraints = ConstraintList()
+    parent_training = model.ABSENCES.pipe(lambda x: x[x.Type == "Parent Training"])[["Name", "Start", "End"]]
+    for _, row in parent_training.iterrows():
+        start, end = _clean_start_end(model, row)
+        for i in range(start, end):
+            model.parent_training_constraints.add(
+                expr=sum(model.X[day, i, child, row["Name"]]
+                         for day in model.DAYS
+                         for child in model.CHILDREN) == 0
+            )
+    return model
+
+def add_team_meeting_constraints(model: ConcreteModel) -> ConcreteModel:
+    model.team_meeting_constraints = ConstraintList()
+    team_meeting = model.ABSENCES.pipe(lambda x: x[x.Type == "Team Meeting"])[["Name", "Start", "End"]]
+    for _, row in team_meeting.iterrows():
+        start, end = _clean_start_end(model, row)
+        for i in range(start, end):
+            model.team_meeting_constraints.add(
+                expr=sum(model.X[day, i, child, staff]
+                         for day in model.DAYS
+                         for child in model.CHILDREN
+                         for staff in model.STAFF) == 0
+            )
+    return model
+
+def add_nap_time_constraints(model: ConcreteModel) -> ConcreteModel:
+    model.nap_time_constraints = ConstraintList()
+    nap_rows = model.ABSENCES.pipe(lambda x: x[x.Type == "Nap"])[["Name", "Start", "End"]]
+    for _, row in nap_rows.iterrows():
+        start, end = _clean_start_end(model, row)
+        for i in range(start, end):
+            model.nap_time_constraints.add(
+                expr=sum(model.X[day, i, row["Name"], staff]
+                         for day in model.DAYS
+                         for staff in model.STAFF) == 0
+            )
+    return model
+
+def add_speech_therapy_constraints(model: ConcreteModel) -> ConcreteModel:
+    model.speech_constraints = ConstraintList()
+    speech_therapy = model.ABSENCES.pipe(lambda x: x[x.Type == "Speech"])[["Name", "Start", "End"]]
+    for _, row in speech_therapy.iterrows():
+        start, end = _clean_start_end(model, row)
+        for i in range(start, end):
+            model.speech_constraints.add(
+                expr=sum(model.X[day, i, row["Name"], staff]
+                         for day in model.DAYS
+                         for staff in model.STAFF) == 0
+            )
+    return model
+
+def center_hours_constraints(model: ConcreteModel) -> ConcreteModel:
+                             for staff in model.STAFF) == 0
+                )
     return model
 
 def center_hours_constraints(model: ConcreteModel) -> ConcreteModel:

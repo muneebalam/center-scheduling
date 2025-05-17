@@ -58,6 +58,28 @@ def _base_opt_pipeline(day: int) -> Pipeline:
                 inputs = "model_c4",
                 outputs = "model_c42",
             ),
+            ## Parent training
+            node(
+                func = add_parent_training_constraints,
+                inputs = "model_c42",
+                outputs = "model_c43",
+            ),
+            ## Team meeting
+            node(
+                func = add_team_meeting_constraints,
+                inputs = "model_c43",
+                outputs = "model_c44",
+            ),
+            node(
+                func = add_nap_time_constraints,
+                inputs = "model_c44",
+                outputs = "model_c45",
+            ),
+            node(
+                func = add_speech_therapy_constraints,
+                inputs = "model_c45",
+                outputs = "model_c46",
+            ),
             
             ## Unavailability: Staff training, PTO, Parent training, remote, Team meeting
 
@@ -66,7 +88,7 @@ def _base_opt_pipeline(day: int) -> Pipeline:
             ## Indicators
             node(
                 func = add_child_no_staff_indicator,
-                inputs = "model_c42",
+                inputs = "model_c46",
                 outputs = "model_c5",
             ),
             node(
