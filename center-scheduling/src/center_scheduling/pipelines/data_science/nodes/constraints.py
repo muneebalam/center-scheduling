@@ -7,7 +7,7 @@ from pyomo.environ import (
     ConstraintList, maximize
 )
 
-
+from .setup import _24h_time_to_index
 
 def add_pto_constraints(model: ConcreteModel) -> ConcreteModel:
     model.pto_constraints = ConstraintList()
@@ -15,10 +15,12 @@ def add_pto_constraints(model: ConcreteModel) -> ConcreteModel:
     for _, row in pto.iterrows():
         start = row["Start"]
         end = row["End"]
-        if start is None:
+        if start is None or pd.isna(start):
             start = min(model.TIME_BLOCKS)
-        if end is None:
+        if end is None or pd.isna(end):
             end = max(model.TIME_BLOCKS)
+        start = int(start)
+        end = int(end)
         for i in range(start, end):
             model.pto_constraints.add(
                 expr=sum(model.X[day, i, child, row["Name"]]
@@ -87,36 +89,6 @@ def add_one_place_per_time_constraint(model: ConcreteModel) -> ConcreteModel:
                 )
     return model
 
-# Indicators ------------------------------------------------------------------
-
-def add_child_no_staff_indicator(model: ConcreteModel) -> ConcreteModel:
-    """
-    Add a constraint to indicate when a child does not have staff.
-
-    Args:
-        model (ConcreteModel): The Pyomo model to which the constraint will be added.
-
-    Returns:
-        ConcreteModel: The model with the constraint added.
-    """
-    model.z_child_no_staff = Var(model.DAYS, 
-                                  model.TIME_BLOCKS, 
-                                  model.CHILDREN,
-                                  within=Binary)
-    
-    model.child_no_staff_constraints = ConstraintList()
-    for day in model.DAYS:
-        for time_block in model.TIME_BLOCKS:
-            for child in model.CHILDREN:
-                n_staff = sum(model.X[day, time_block, child, staff]
-                              for staff in model.STAFF)
-                # if n_staff == 0, then z_child_no_staff = 1
-                # else, z_child_no_staff = 0
-                model.child_no_staff_constraints.add(
-                    expr= n_staff >= (1 - model.z_child_no_staff[day, time_block, child])
-                )
-    return model
-
 def add_junior_staff_constraints(model: ConcreteModel) -> ConcreteModel:
     """
     Add constraints to ensure that junior staff are not assigned to children.
@@ -150,8 +122,8 @@ def add_lunch_constraints(model: ConcreteModel) -> ConcreteModel:
         ConcreteModel: The model with the constraints added.
     """
     # Define the lunch time range
-    lunch_start = _24h_time_to_index("12:00:00")
-    lunch_end = _24h_time_to_index("14:00:00")
+    lunch_start = _24h_time_to_index(12)
+    lunch_end = _24h_time_to_index(14)
     span = lunch_end - lunch_start
 
     model.lunch_constraints = ConstraintList()

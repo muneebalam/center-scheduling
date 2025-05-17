@@ -99,3 +99,34 @@ def add_switch_indicator(model: ConcreteModel) -> ConcreteModel:
                         expr = -1 * mydiff <= model.z_switch[day, time_block, staff]
                     )
     return model
+
+
+# Indicators ------------------------------------------------------------------
+
+def add_child_no_staff_indicator(model: ConcreteModel) -> ConcreteModel:
+    """
+    Add a constraint to indicate when a child does not have staff.
+
+    Args:
+        model (ConcreteModel): The Pyomo model to which the constraint will be added.
+
+    Returns:
+        ConcreteModel: The model with the constraint added.
+    """
+    model.z_child_no_staff = Var(model.DAYS, 
+                                  model.TIME_BLOCKS, 
+                                  model.CHILDREN,
+                                  within=Binary)
+    
+    model.child_no_staff_constraints = ConstraintList()
+    for day in model.DAYS:
+        for time_block in model.TIME_BLOCKS:
+            for child in model.CHILDREN:
+                n_staff = sum(model.X[day, time_block, child, staff]
+                              for staff in model.STAFF)
+                # if n_staff == 0, then z_child_no_staff = 1
+                # else, z_child_no_staff = 0
+                model.child_no_staff_constraints.add(
+                    expr= n_staff >= (1 - model.z_child_no_staff[day, time_block, child])
+                )
+    return model

@@ -17,8 +17,19 @@ def _24h_time_to_index(time: str) -> int:
     Returns:
         int: Index corresponding to the time.
     """
-    hour, minute, sec = map(int, str(time).split(':'))
-    return int(hour * 2 + minute / 30)
+    #hour, minute, sec = map(int, str(time).split(':'))
+    #return int(hour * 2 + minute / 30)
+    if isinstance(time, pd.Timestamp):
+        hr = time.hour
+        minute = time.minute
+        return int(hr * 2 + minute / 30)
+    if isinstance(time, str):
+        hr = int(time.split(':')[0])
+        minute = int(time.split(':')[1])
+        return int(hr * 2 + minute / 30)
+    return time * 2
+
+
 def _index_to_24h_time(index: int) -> str:
     """
     Convert an index to a 24-hour time string.
