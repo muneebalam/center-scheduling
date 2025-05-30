@@ -56,11 +56,17 @@ if uploaded_file is not None:
             new_data[sheet_name] = pd.read_excel(os.path.join(BASE_FOLDER, fpath), 
                                                 sheet_name=sheet_name)
 
-else:
-    for k, v in example_data.items():
-        with st.expander(f"Example {k}"):
-            st.dataframe(v, hide_index=True)
-        if k in new_data:
-            with st.expander(f"Uploaded {k}"):
-                st.dataframe(new_data[k], hide_index=True)
+for k, v in example_data.items():
+    with st.expander(f"Example {k}"):
+        st.dataframe(v, hide_index=True)
+    if k in new_data:
+        with st.expander(f"Uploaded {k}"):
+            st.dataframe(new_data[k], hide_index=True)
+
+env_selection = st.selectbox("Select environment", ["example", "uploaded"])
+env_to_run = {"example": "base", "uploaded": "local"}[env_selection]
+if st.button("Run pipeline"):
+    with st.spinner("Running pipeline..."):
+        with KedroSession.create_from_project_path(BASE_FOLDER, env=env_to_run) as session:
+            session.run()
             
