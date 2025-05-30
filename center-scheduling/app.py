@@ -22,18 +22,20 @@ BASE_FOLDER = "center-scheduling"
 with open(os.path.join(BASE_FOLDER, "conf/base/catalog.yml"), "r") as f:
     catalog = yaml.safe_load(f)
 
-keys = ["center_hours", "staff_child", "absences", "roles"]
 example_data = {}
 
 # Read the example files
-for key in keys:
+for key in catalog:
     sheet_name = catalog[key]["load_args"]["sheet_name"]
-    example_data[sheet_name] = pd.read_excel(os.path.join(BASE_FOLDER, catalog[key]["load_args"]["filepath"]), 
-                                            sheet_name=sheet_name)
+    fpath = catalog[key]["load_args"]["filepath"]
+    if "01_raw" in fpath:
+        example_data[sheet_name] = pd.read_excel(os.path.join(BASE_FOLDER, fpath), 
+                                                sheet_name=sheet_name)
     
 if uploaded_file is not None:
     # First, read required tabs
     multiframe = {}
+    keys = ["center_hours", "staff_child", "absences", "roles"]
 
     for key in keys:
         sheet_name = catalog[key]["load_args"]["sheet_name"]
@@ -47,7 +49,6 @@ if uploaded_file is not None:
     st.write("Upload successful")
 
 else:
-    for key in keys:
-        sheet_name = catalog[key]["load_args"]["sheet_name"]
-        with st.expander(f"Example {sheet_name}"):
-            st.dataframe(example_data[sheet_name])
+    for k, v in example_data.items():
+        with st.expander(f"Example {k}"):
+            st.dataframe(v)
