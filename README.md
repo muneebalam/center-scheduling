@@ -2,9 +2,9 @@
 
 # Installation
 
-`conda env create --name sch python=3.12`
+`conda env create --name sch python=3.8`
 
-`pip install -r center-scheduling/requirements.txt`
+`uv sync`
 
 # Development
 
@@ -16,7 +16,6 @@
 
 If you install another package:
 
-`conda env export > environment.yaml`
-`pip freeze > requirements.txt`
+`uv add mypackage`
 
-(Yes, the environment is inconsistent for now.)
+`uv lock`
