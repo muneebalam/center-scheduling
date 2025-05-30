@@ -23,6 +23,7 @@ with open(os.path.join(BASE_FOLDER, "conf/base/catalog.yml"), "r") as f:
     catalog = yaml.safe_load(f)
 
 example_data = {}
+new_data = {}
 
 # Read the example files
 for key in catalog:
@@ -48,7 +49,18 @@ if uploaded_file is not None:
     dataset.save(multiframe)
     st.write("Upload successful")
 
+    for key in local_catalog:
+        fpath = local_catalog[key]["filepath"]
+        if "01_raw" in fpath:
+            sheet_name = local_catalog[key]["load_args"]["sheet_name"]
+            new_data[sheet_name] = pd.read_excel(os.path.join(BASE_FOLDER, fpath), 
+                                                sheet_name=sheet_name)
+
 else:
     for k, v in example_data.items():
         with st.expander(f"Example {k}"):
             st.dataframe(v, hide_index=True)
+        if k in new_data:
+            with st.expander(f"Uploaded {k}"):
+                st.dataframe(new_data[k], hide_index=True)
+            
