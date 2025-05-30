@@ -19,12 +19,22 @@ uploaded_file = st.file_uploader("Upload the center data", type="xlsx")
 
 BASE_FOLDER = "center-scheduling"
 
+with open(os.path.join(BASE_FOLDER, "conf/base/catalog.yml"), "r") as f:
+    catalog = yaml.safe_load(f)
+
+keys = ["center_hours", "staff_child", "absences", "roles"]
+example_data = {}
+
+# Read the example files
+for key in keys:
+    sheet_name = catalog[key]["load_args"]["sheet_name"]
+    example_data[sheet_name] = pd.read_excel(os.path.join(BASE_FOLDER, catalog[key]["load_args"]["filepath"]), 
+                                            sheet_name=sheet_name)
+    with st.expander(f"Example {sheet_name}"):
+        st.dataframe(example_data[sheet_name])
+    
 if uploaded_file is not None:
     # First, read required tabs
-    with open(os.path.join(BASE_FOLDER, "conf/base/catalog.yml"), "r") as f:
-        catalog = yaml.safe_load(f)
-
-    keys = ["center_hours", "staff_child", "absences", "roles"]
     multiframe = {}
 
     for key in keys:
@@ -37,3 +47,6 @@ if uploaded_file is not None:
     dataset = ExcelDataset(filepath=fpath, load_args = {"sheet_name": None})
     dataset.save(multiframe)
     st.write("Upload successful")
+
+else:
+    
