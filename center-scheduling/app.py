@@ -26,9 +26,9 @@ example_data = {}
 
 # Read the example files
 for key in catalog:
-    sheet_name = catalog[key]["load_args"]["sheet_name"]
     fpath = catalog[key]["filepath"]
     if "01_raw" in fpath:
+        sheet_name = catalog[key]["load_args"]["sheet_name"]
         example_data[sheet_name] = pd.read_excel(os.path.join(BASE_FOLDER, fpath), 
                                                 sheet_name=sheet_name)
     
