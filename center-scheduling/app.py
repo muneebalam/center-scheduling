@@ -30,8 +30,6 @@ for key in keys:
     sheet_name = catalog[key]["load_args"]["sheet_name"]
     example_data[sheet_name] = pd.read_excel(os.path.join(BASE_FOLDER, catalog[key]["load_args"]["filepath"]), 
                                             sheet_name=sheet_name)
-    with st.expander(f"Example {sheet_name}"):
-        st.dataframe(example_data[sheet_name])
     
 if uploaded_file is not None:
     # First, read required tabs
@@ -49,4 +47,7 @@ if uploaded_file is not None:
     st.write("Upload successful")
 
 else:
-    
+    for key in keys:
+        sheet_name = catalog[key]["load_args"]["sheet_name"]
+        with st.expander(f"Example {sheet_name}"):
+            st.dataframe(example_data[sheet_name])
