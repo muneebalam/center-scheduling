@@ -51,4 +51,4 @@ if uploaded_file is not None:
 else:
     for k, v in example_data.items():
         with st.expander(f"Example {k}"):
-            st.dataframe(v)
+            st.dataframe(v, hide_index=True)
