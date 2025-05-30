@@ -67,6 +67,6 @@ env_selection = st.selectbox("Select environment", ["example", "uploaded"])
 env_to_run = {"example": "base", "uploaded": "local"}[env_selection]
 if st.button("Run pipeline"):
     with st.spinner("Running pipeline..."):
-        with KedroSession.create_from_project_path(BASE_FOLDER, env=env_to_run) as session:
+        with KedroSession.create(BASE_FOLDER, env=env_to_run) as session:
             session.run()
             
