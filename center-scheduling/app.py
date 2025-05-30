@@ -27,7 +27,7 @@ example_data = {}
 # Read the example files
 for key in catalog:
     sheet_name = catalog[key]["load_args"]["sheet_name"]
-    fpath = catalog[key]["load_args"]["filepath"]
+    fpath = catalog[key]["filepath"]
     if "01_raw" in fpath:
         example_data[sheet_name] = pd.read_excel(os.path.join(BASE_FOLDER, fpath), 
                                                 sheet_name=sheet_name)
@@ -43,7 +43,7 @@ if uploaded_file is not None:
 
     # Then, save the data to the local (not base) catalog
     local_catalog = os.path.join(BASE_FOLDER, "conf/local/catalog.yml")
-    fpath = os.path.join(BASE_FOLDER, local_catalog["center_hours"]["load_args"]["filepath"])
+    fpath = os.path.join(BASE_FOLDER, local_catalog["center_hours"]["filepath"])
     dataset = ExcelDataset(filepath=fpath, load_args = {"sheet_name": None})
     dataset.save(multiframe)
     st.write("Upload successful")
