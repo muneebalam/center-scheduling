@@ -115,30 +115,32 @@ with st.container(border=True):
     with res_tabs[-1]:
         st.markdown("## Run log")
         st.write(" ".join(os.listdir(os.path.join(NEEDED_WD, "data", "08_reporting"))))
-    try:
-        results = [pd.read_csv(os.path.join(NEEDED_WD, "data", "08_reporting", f"d{i}_solution.csv")) for i in range(1, 6)]
-        res_styled = [result.drop("Day", axis=1)
-                        .set_index("Time Block")
-                        .style.applymap(_apply_bg_color) for result in results]
 
-        csv = pd.concat(results).to_csv(index=False).encode('utf-8')
+    with st.button("Refresh results"):
+        try:
+            results = [pd.read_csv(os.path.join(NEEDED_WD, "data", "08_reporting", f"d{i}_solution.csv")) for i in range(1, 6)]
+            res_styled = [result.drop("Day", axis=1)
+                            .set_index("Time Block")
+                            .style.applymap(_apply_bg_color) for result in results]
 
-        st.download_button(
-            "Download",
-            csv,
-            "solution.csv",
-            "text/csv",
-            key='download-csv'
-        )
-        for i, result in enumerate(res_styled):
-            with res_tabs[i]:
-                st.dataframe(result)
-            # if process is not None:
-            #     while process.poll() is None:
-            #         line = process.stdout.readline()
-            #         if not line:
-            #             continue
-            #         st.write(line.strip())
-    except FileNotFoundError:
-        pass
+            csv = pd.concat(results).to_csv(index=False).encode('utf-8')
+
+            st.download_button(
+                "Download",
+                csv,
+                "solution.csv",
+                "text/csv",
+                key='download-csv'
+            )
+            for i, result in enumerate(res_styled):
+                with res_tabs[i]:
+                    st.dataframe(result)
+                # if process is not None:
+                #     while process.poll() is None:
+                #         line = process.stdout.readline()
+                #         if not line:
+                #             continue
+                #         st.write(line.strip())
+        except FileNotFoundError:
+            pass
                 
