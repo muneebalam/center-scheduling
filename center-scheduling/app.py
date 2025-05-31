@@ -12,13 +12,11 @@ KEYS = ["center_hours", "staff_child", "absences", "roles"]
 @st.cache_data
 def _get_original_dir():
     cwd = os.getcwd()
-    if BASE_FOLDER not in cwd:
-        cwd = os.path.join(cwd, BASE_FOLDER)
     return cwd
 ORIGINAL_WD = _get_original_dir()
 def _get_catalog(env):
     os.chdir(ORIGINAL_WD)
-    cat_path = os.path.join(ORIGINAL_WD, "conf", env, "catalog.yml")
+    cat_path = os.path.join(ORIGINAL_WD, BASE_FOLDER, "conf", env, "catalog.yml")
     assert os.path.exists(cat_path), f"Catalog not found at {cat_path}"
     with open(cat_path, "r") as f:
         return yaml.safe_load(f)
