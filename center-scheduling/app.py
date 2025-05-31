@@ -68,11 +68,11 @@ for k, v in example_data.items():
 # If you are creating a session outside of a Kedro project (i.e. not using
 # `kedro run` or `kedro jupyter`), you need to run `bootstrap_project` to
 # let Kedro find your configuration.
-bootstrap_project(Path(BASE_FOLDER))
 env_selection = st.selectbox("Select environment", ["example", "uploaded"])
 env_to_run = {"example": "base", "uploaded": "local"}[env_selection]
 if st.button("Run pipeline"):
     with st.spinner("Running pipeline..."):
-        with KedroSession.create(BASE_FOLDER, env=env_to_run) as session:
+        bootstrap_project(Path(os.getcwd()))
+        with KedroSession.create(os.getcwd(), env=env_to_run) as session:
             session.run()
             
