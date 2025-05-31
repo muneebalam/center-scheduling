@@ -18,7 +18,7 @@ def _get_original_dir():
 ORIGINAL_WD = _get_original_dir()
 def _get_catalog(env):
     os.chdir(ORIGINAL_WD)
-    cat_path = os.path.join("conf", env, "catalog.yml")
+    cat_path = os.path.join(ORIGINAL_WD, "conf", env, "catalog.yml")
     assert os.path.exists(cat_path), f"Catalog not found at {cat_path}"
     with open(cat_path, "r") as f:
         return yaml.safe_load(f)
