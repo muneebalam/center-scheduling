@@ -102,9 +102,16 @@ def setup_decision_variables(center_hours: pd.DataFrame,
         .drop(columns="Allowed")
     )
     
-    model.ABSENCES = absences.pipe(lambda x: x[(x.Day.isna()) | (x.Day == day)])
+    model.ABSENCES = (
+        absences.pipe(lambda x: x[(x.Day.isna()) | (x.Day == day)])
+        .assign(Type = lambda x: x.Type.str.strip().str.lower(),
+               Name = lambda x: _clean_names(x.Name))
+    )
     model.ROLES = roles.assign(Name = lambda x: _clean_names(x.Name))
-    model.STAFF_CHILD = _add_sbt_ts_bs_to_staff_child(model.STAFF_CHILD, model.ROLES)
+    model.STAFF_CHILD = (
+        _add_sbt_ts_bs_to_staff_child(model.STAFF_CHILD, model.ROLES)
+        .assign(Staff = lambda x: _clean_names(x.Staff))
+    )
     
     # Define the junior and senior staff
     model.JSTAFF = model.ROLES.pipe(lambda x: x[x.Role.isin(["Tech", "SBT"])])["Name"]

@@ -17,9 +17,9 @@ constraint_on_off:
   one_place_per_time: True
   # Lunch adds runtime. Need to simplify. For now, should add heuristically
   lunch: False
-  pto: True
-  parent_training: True
-  team_meeting: True
-  nap_time: True
-  speech_therapy: True
+  pto: False
+  parent_training: False
+  team_meeting: False
+  nap_time: False
+  speech_therapy: False
   arrival_departure: True

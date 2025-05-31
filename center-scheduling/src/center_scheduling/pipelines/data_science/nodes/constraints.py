@@ -22,8 +22,12 @@ def _clean_start_end(model: ConcreteModel, row: pd.Series) -> tuple[int, int]:
     except ValueError:
         if start is None or pd.isna(start):
             start = min(model.TIME_BLOCKS)
+        else:
+            start = _24h_time_to_index(start)
         if end is None or pd.isna(end):
             end = max(model.TIME_BLOCKS)
+        else:
+            end = _24h_time_to_index(end)
 
     # Also make sure these do not exceed time blocks
     start = max(start, min(model.TIME_BLOCKS))
@@ -34,7 +38,7 @@ def add_pto_constraints(model: ConcreteModel, constraint_on_off: dict) -> Concre
     if not constraint_on_off["pto"]:
         return model
     model.pto_constraints = ConstraintList()
-    pto = model.ABSENCES.pipe(lambda x: x[x.Type == "PTO"])[["Name", "Day", "Start", "End"]]
+    pto = model.ABSENCES.pipe(lambda x: x[x.Type == "pto"])[["Name", "Day", "Start", "End"]]
     for _, row in pto.iterrows():
         start, end = _clean_start_end(model, row)
         if start >= end:
@@ -117,9 +121,10 @@ def add_arrival_departure_constraints(model: ConcreteModel, constraint_on_off: d
         return model
     arr_dep = (
         model.ABSENCES
-        .pipe(lambda x: x[x.Type.str.lower().isin(["late arrival", "leaves early"])])
+        .pipe(lambda x: x[x.Type.isin(["late arrival", "leaves early"])])
         [["Name", "Start", "End"]]
     )
+    assert True == False, model.ABSENCES
     model.arrival_departure_constraints = ConstraintList()
     for _, row in arr_dep.iterrows():
         start, end = _clean_start_end(model, row)

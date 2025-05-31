@@ -4,10 +4,7 @@ import os
 from kedro_datasets.pandas import ExcelDataset
 import pandas as pd
 import sys
-from kedro.framework.session import KedroSession
-from kedro.framework.startup import bootstrap_project
-from pathlib import Path
-import numpy as np
+import subprocess
 
 # Get the original directory and cache
 BASE_FOLDER = "center-scheduling"
@@ -42,6 +39,7 @@ sys.path.append("center-scheduling")
 st.title("Center Scheduling")
 st.write("This is a web app to schedule staff for a center.")
 
+process = None
 with st.container(border=True):
     st.markdown("# Setup")
     st.write("Upload the center data to get started.")
@@ -77,16 +75,14 @@ with st.container(border=True):
             with st.expander(f"Uploaded {k}"):
                 st.dataframe(new_data[k], hide_index=True)
 
-    # If you are creating a session outside of a Kedro project (i.e. not using
-    # `kedro run` or `kedro jupyter`), you need to run `bootstrap_project` to
-    # let Kedro find your configuration.
-    #bootstrap_project(Path(BASE_FOLDER))
     env_selection = st.selectbox("Select environment", ["example", "uploaded"])
     env_to_run = {"example": "base", "uploaded": "local"}[env_selection]
     if st.button("Run pipeline"):
         with st.spinner("Running pipeline..."):
             os.chdir(ORIGINAL_WD)
-            os.system(f"uv run kedro run --env={env_to_run}")
+            command = ["uv", "run", "kedro", "run", f"--env={env_to_run}"]
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+
 
 def _apply_bg_color(elem):
     if elem is None or elem == "" or pd.isnull(elem):
@@ -106,7 +102,7 @@ def _apply_bg_color(elem):
 with st.container(border=True):
     st.markdown("# Results")
 
-    res_tabs = st.tabs(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
+    res_tabs = st.tabs(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Log"])
     try:
         results = [pd.read_csv(f"data/08_reporting/d{i}_solution.csv") for i in range(1, 6)]
         res_styled = [result.drop("Day", axis=1)
@@ -115,6 +111,14 @@ with st.container(border=True):
         for i, result in enumerate(res_styled):
             with res_tabs[i]:
                 st.dataframe(result)
+        with res_tabs[-1]:
+            st.markdown("## Run log")
+            if process is not None:
+                while process.poll() is None:
+                    line = process.stdout.readline()
+                    if not line:
+                        continue
+                    st.write(line.strip())
     except FileNotFoundError:
         pass
                 
