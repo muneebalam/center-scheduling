@@ -10,7 +10,7 @@
 
 `conda activate sch`
 
-`kedro run`
+`uv run kedro run --env=base`
 
 `streamlit run app.py`
 

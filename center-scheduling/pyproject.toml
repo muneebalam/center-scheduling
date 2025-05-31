@@ -1,0 +1,59 @@
+[build-system]
+requires = [ "setuptools",]
+build-backend = "setuptools.build_meta"
+
+[project]
+requires-python = ">=3.8"
+name = "center_scheduling"
+readme = "README.md"
+dynamic = [ "version",]
+dependencies = [ "ipython", "jupyterlab", "notebook", "kedro[jupyter]", 
+                "kedro-datasets[pandas-csvdataset, pandas-exceldataset, pandas-parquetdataset, plotly-plotlydataset, plotly-jsondataset, matplotlib-matplotlibwriter]", 
+                "kedro-viz", 
+                "arabic-reshaper>=3.0.0",
+                "jupyter>=1.1.1",
+                "kedro>=0.19.8",
+                "openpyxl>=3.1.5",
+                "pandas>=2.0.3",
+                "pillow>=10.4.0",
+                "pyomo>=6.8.2",
+                "pyyaml>=6.0.2",
+                "scikit-learn>=1.3.2",
+                "seaborn>=0.13.2",
+                "streamlit>=1.40.1",
+                "tqdm>=4.67.1"]
+
+[project.scripts]
+center-scheduling = "center_scheduling.__main__:main"
+
+[project.optional-dependencies]
+dev = [ "pytest-cov~=3.0", "pytest-mock>=1.7.1, <2.0", "pytest~=7.2", "ruff~=0.1.8",]
+
+[tool.kedro]
+package_name = "center_scheduling"
+project_name = "center-scheduling"
+source_dir = "src"
+kedro_init_version = "0.19.13"
+tools = "['Linting', 'Data Structure']"
+example_pipeline = "False"
+
+[tool.ruff]
+line-length = 88
+show-fixes = true
+select = [ "F", "W", "E", "I", "UP", "PL", "T201",]
+ignore = [ "E501",]
+
+[project.entry-points."kedro.hooks"]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.setuptools.dynamic.version]
+attr = "center_scheduling.__version__"
+
+[tool.setuptools.packages.find]
+where = [ "src",]
+namespaces = false
+
+[tool.kedro_telemetry]
+project_id = "7a7325f799474bf2b45f76e937a43380"
