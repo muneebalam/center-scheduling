@@ -18,6 +18,7 @@ NEEDED_WD = os.path.join(ORIGINAL_WD, BASE_FOLDER) if BASE_FOLDER not in ORIGINA
 def _get_catalog(env):
     os.chdir(NEEDED_WD)
     cat_path = os.path.join("conf", env, "catalog.yml")
+    assert os.path.exists(cat_path), f"Catalog file {cat_path} does not exist: ls = {os.listdir(NEEDED_WD)}"
     with open(cat_path, "r") as f:
         return yaml.safe_load(f)
 @st.cache_data
