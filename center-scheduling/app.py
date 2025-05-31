@@ -143,5 +143,5 @@ with st.container(border=True):
                 #             continue
                 #         st.write(line.strip())
         except FileNotFoundError:
-            pass
+            st.write("No results yet")
                 
