@@ -120,6 +120,16 @@ with st.container(border=True):
         res_styled = [result.drop("Day", axis=1)
                         .set_index("Time Block")
                         .style.applymap(_apply_bg_color) for result in results]
+
+        csv = pd.concat(results).to_csv(index=False).encode('utf-8')
+
+        st.download_button(
+            "Download",
+            csv,
+            "solution.csv",
+            "text/csv",
+            key='download-csv'
+        )
         for i, result in enumerate(res_styled):
             with res_tabs[i]:
                 st.dataframe(result)
