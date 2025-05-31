@@ -86,8 +86,8 @@ with st.container(border=True):
     if st.button("Run pipeline"):
         with st.spinner("Running pipeline..."):
             command = ["uv", "run", "kedro", "run", f"--env={env_to_run}"]
-            if NEEDED_WD != ORIGINAL_WD:
-                command = ["cd", BASE_FOLDER, "&&"] + command
+            #if NEEDED_WD != ORIGINAL_WD:
+            #    command = ["cd", BASE_FOLDER, "&&"] + command
             os.system(" ".join(command))
             #process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
             #process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
