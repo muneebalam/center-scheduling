@@ -12,7 +12,7 @@ from .setup import _24h_time_to_index, _index_to_24h_time
 
 def solve(model: ConcreteModel) -> ConcreteModel:
     """
-    Solve the optimization model.
+    Solve the optimization model with optimized settings.
 
     Args:
         model (ConcreteModel): The Pyomo model to be solved.
@@ -20,17 +20,19 @@ def solve(model: ConcreteModel) -> ConcreteModel:
     Returns:
         ConcreteModel: The solved model.
     """
-    # Create a solver
-    solver = SolverFactory('glpk')
-
-    # Solve the model
+    # Set solver options
+    solver = SolverFactory('cbc') #glpk
+    solver.options['threads'] = 4    # Use multiple threads if available
+    solver.options['ratio'] = 0.01   # Set gap tolerance to 1%
+    solver.options['heur'] = 'on'    # Enable heuristics
+    
+    # Solve with optimized settings
     results = solver.solve(model, tee=True)
-
-    # Check if the solver found a solution
-    if results.solver.termination_condition == 'optimal':
-        logger.info("Optimal solution found.")
-    else:
-        logger.info("Solver did not find an optimal solution.")
+    
+    # Check if solution was found
+    if results.solver.termination_condition != 'optimal':
+        logger.warning(f"Solution not optimal: {results.solver.termination_condition}")
+    
 
     return model
 
@@ -43,16 +45,14 @@ def print_solution(model: ConcreteModel) -> pd.DataFrame:
     """
     # Iterate through the decision variables and print their values
     results_df = pd.DataFrame({}, columns=["Day", "Time Block", "Child", "Staff"])
-    for time_block in model.TIME_BLOCKS:
-        for child in model.CHILDREN:
-            for staff in model.STAFF:
-                if model.X[time_block, child, staff].value > 0:
-                        results_df = pd.concat([results_df, pd.DataFrame({
-                            "Day": [model.DAY],
-                            "Time Block": [time_block],
-                            "Child": [child],
-                            "Staff": [staff]
-                        })], ignore_index=True)
+    for (time_block, child, staff), _ in model.INDEX_DF.groupby(["Time Block", "Child", "Staff"]):
+        if model.X[time_block, child, staff].value > 0:
+            results_df = pd.concat([results_df, pd.DataFrame({
+                "Day": [model.DAY],
+                "Time Block": [time_block],
+                "Child": [child],
+                "Staff": [staff]
+            })], ignore_index=True)
     results_df_wide = (
         results_df
         .pivot(index=["Day", "Time Block"], columns = "Staff", values = "Child")

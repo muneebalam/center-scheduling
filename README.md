@@ -10,6 +10,12 @@ You may also need
 
 `conda install glpk`
 
+`conda install conda-forge::coin-or-cbc`
+
+If on Mac, you can also install these using brew
+
+`brew install glpk cbc`
+
 # Development
 
 `conda activate sch`

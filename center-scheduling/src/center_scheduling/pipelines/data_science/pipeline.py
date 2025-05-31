@@ -96,23 +96,13 @@ def _base_opt_pipeline(day: int) -> Pipeline:
 
             ## Indicators
             node(
-                func = add_child_no_staff_indicator,
+                func = add_child_2_staff_indicator,
                 inputs = "model_c47",
                 outputs = "model_c5",
             ),
             node(
-                func = add_staff_not_fully_used_indicator,
-                inputs = "model_c5",
-                outputs = "model_c6",
-            ),
-            node(
-                func = add_child_2_staff_indicator,
-                inputs = "model_c6",
-                outputs = "model_c7",
-            ),
-            node(
                 func = add_switch_indicator,
-                inputs= "model_c7",
+                inputs= "model_c5",
                 outputs = "model_c8",
             ),
 

@@ -121,35 +121,26 @@ def setup_decision_variables(center_hours: pd.DataFrame,
     model.SSTAFF = [x for x in model.SSTAFF if x in model.STAFF_CHILD.Staff.unique()]
 
     # Create decision variables for the model
-    model.CHILDREN = model.STAFF_CHILD.Child.unique()
-    model.STAFF = model.STAFF_CHILD.Staff.unique()
-
-    # Staff role todo
     model.DAY = model.CENTER_HOURS.Day.iloc[0]
     first_start = model.CENTER_HOURS.Open.min()
     last_end = model.CENTER_HOURS.Close.max()
     model.TIME_BLOCKS = range(_24h_time_to_index(first_start), 
                                   _24h_time_to_index(last_end))
-    model.X = Var(model.TIME_BLOCKS, 
-                  model.CHILDREN,
-                  model.STAFF,
-                  within=Binary)
-
+    
+    # Create a list of valid (time, child, staff) combinations based on staff_child relationships
+    valid_combinations = []
+    for time in model.TIME_BLOCKS:
+        for _, row in model.STAFF_CHILD.iterrows():
+            valid_combinations.append((time, row['Child'], row['Staff']))
+    
+    model.X = Var(valid_combinations, within=Binary)
+    model.INDEX_DF = pd.DataFrame.from_records(model.X.keys(), columns=["Time Block", "Child", "Staff"])
+    
     # Return the processed data
     return model
 
 def save_model_index(model: ConcreteModel) -> pd.DataFrame:
-    data = []
-    for time_block in model.TIME_BLOCKS:
-        for child in model.CHILDREN:
-            for staff in model.STAFF:
-                data.append({
-                    "Day": model.DAY,
-                    "Time Block": time_block,
-                    "Child": child,
-                    "Staff": staff,
-                })
-    return pd.DataFrame.from_records(data)
+    return model.INDEX_DF
                     
 def input_sense_checks(model: ConcreteModel) -> ConcreteModel:
     """Checks:
