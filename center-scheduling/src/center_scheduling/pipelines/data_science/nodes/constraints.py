@@ -124,7 +124,6 @@ def add_arrival_departure_constraints(model: ConcreteModel, constraint_on_off: d
         .pipe(lambda x: x[x.Type.isin(["late arrival", "leaves early"])])
         [["Name", "Start", "End"]]
     )
-    assert True == False, model.ABSENCES
     model.arrival_departure_constraints = ConstraintList()
     for _, row in arr_dep.iterrows():
         start, end = _clean_start_end(model, row)
