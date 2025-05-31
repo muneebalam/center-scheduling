@@ -88,7 +88,8 @@ with st.container(border=True):
             command = ["uv", "run", "kedro", "run", f"--env={env_to_run}"]
             if NEEDED_WD != ORIGINAL_WD:
                 command = ["cd", BASE_FOLDER, "&&"] + command
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+            process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+            #process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
 
 
 def _apply_bg_color(elem):
