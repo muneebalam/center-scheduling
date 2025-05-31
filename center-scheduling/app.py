@@ -116,7 +116,8 @@ with st.container(border=True):
         st.markdown("## Run log")
         st.write(" ".join(os.listdir(os.path.join(NEEDED_WD, "data", "08_reporting"))))
 
-    with st.button("Refresh results"):
+    refresh_button = st.button("Refresh results")
+    if refresh_button:
         try:
             results = [pd.read_csv(os.path.join(NEEDED_WD, "data", "08_reporting", f"d{i}_solution.csv")) for i in range(1, 6)]
             res_styled = [result.drop("Day", axis=1)
