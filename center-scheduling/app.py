@@ -9,15 +9,16 @@ from kedro.framework.startup import bootstrap_project
 from pathlib import Path
 
 # Get the original directory and cache
-
 BASE_FOLDER = "center-scheduling"
 KEYS = ["center_hours", "staff_child", "absences", "roles"]
 @st.cache_data
 def get_original_dir():
     return os.getcwd()
+ORIGINAL_WD = get_original_dir()
 @st.cache_data
 def get_original_catalog():
-    with open(os.path.join(BASE_FOLDER, "conf/base/catalog.yml"), "r") as f:
+    os.chdir(ORIGINAL_WD)
+    with open("conf/base/catalog.yml", "r") as f:
         return yaml.safe_load(f)
 @st.cache_data
 def get_example_data(catalog):
@@ -26,11 +27,10 @@ def get_example_data(catalog):
         fpath = catalog[key]["filepath"]
         if "01_raw" in fpath:
             sheet_name = catalog[key]["load_args"]["sheet_name"]
-            example_data[sheet_name] = pd.read_excel(os.path.join(BASE_FOLDER, fpath), 
+            example_data[sheet_name] = pd.read_excel(fpath, 
                                                     sheet_name=sheet_name)
     return example_data
 
-ORIGINAL_WD = get_original_dir()
 os.chdir(ORIGINAL_WD)
 ORIGINAL_CATALOG = get_original_catalog()
 
@@ -43,6 +43,7 @@ uploaded_file = st.file_uploader("Upload the center data", type="xlsx")
 example_data = get_example_data(ORIGINAL_CATALOG)
 new_data = {}
 
+# If the user uploads a file, read it and save it to the local catalog
 if uploaded_file is not None:
     # First, read required tabs
     multiframe = {}
@@ -52,8 +53,8 @@ if uploaded_file is not None:
         multiframe[sheet_name] = pd.read_excel(uploaded_file, sheet_name=sheet_name)
 
     # Then, save the data to the local (not base) catalog
-    local_catalog = os.path.join(BASE_FOLDER, "conf/local/catalog.yml")
-    fpath = os.path.join(BASE_FOLDER, local_catalog["center_hours"]["filepath"])
+    local_catalog = "conf/local/catalog.yml"
+    fpath = local_catalog["center_hours"]["filepath"]
     dataset = ExcelDataset(filepath=fpath, load_args = {"sheet_name": None})
     dataset.save(multiframe)
     st.write("Upload successful")
@@ -62,7 +63,7 @@ if uploaded_file is not None:
         fpath = local_catalog[key]["filepath"]
         if "01_raw" in fpath:
             sheet_name = local_catalog[key]["load_args"]["sheet_name"]
-            new_data[sheet_name] = pd.read_excel(os.path.join(BASE_FOLDER, fpath), 
+            new_data[sheet_name] = pd.read_excel(fpath, 
                                                 sheet_name=sheet_name)
 
 for k, v in example_data.items():
@@ -81,7 +82,7 @@ env_to_run = {"example": "base", "uploaded": "local"}[env_selection]
 if st.button("Run pipeline"):
     with st.spinner("Running pipeline..."):
         os.chdir(ORIGINAL_WD)
-        os.system(f"cd center-scheduling && uv run kedro run --env={env_to_run}")
+        os.system(f"uv run kedro run --env={env_to_run}")
         #with KedroSession.create(BASE_FOLDER, env=env_to_run) as session:
         #    session.run()
             
