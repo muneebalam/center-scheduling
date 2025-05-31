@@ -88,7 +88,8 @@ with st.container(border=True):
             command = ["uv", "run", "kedro", "run", f"--env={env_to_run}"]
             if NEEDED_WD != ORIGINAL_WD:
                 command = ["cd", BASE_FOLDER, "&&"] + command
-            process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+            os.system(" ".join(command))
+            #process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
             #process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
 
 
@@ -121,12 +122,12 @@ with st.container(border=True):
                 st.dataframe(result)
         with res_tabs[-1]:
             st.markdown("## Run log")
-            if process is not None:
-                while process.poll() is None:
-                    line = process.stdout.readline()
-                    if not line:
-                        continue
-                    st.write(line.strip())
+            # if process is not None:
+            #     while process.poll() is None:
+            #         line = process.stdout.readline()
+            #         if not line:
+            #             continue
+            #         st.write(line.strip())
     except FileNotFoundError:
         pass
                 
