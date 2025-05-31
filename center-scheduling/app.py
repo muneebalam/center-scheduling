@@ -14,7 +14,7 @@ def _get_original_dir():
     cwd = os.getcwd()
     return cwd
 ORIGINAL_WD = _get_original_dir()
-NEEDED_WD = os.path.join(ORIGINAL_WD, BASE_FOLDER) if BASE_FOLDER not in ORIGINAL_WD else ORIGINAL_WD
+NEEDED_WD = os.path.join(ORIGINAL_WD, BASE_FOLDER) if not ORIGINAL_WD.endswith(BASE_FOLDER) else ORIGINAL_WD
 def _get_catalog(env):
     os.chdir(NEEDED_WD)
     cat_path = os.path.join("conf", env, "catalog.yml")
