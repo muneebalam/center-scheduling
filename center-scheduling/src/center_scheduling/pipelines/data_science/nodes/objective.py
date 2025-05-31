@@ -35,8 +35,7 @@ def add_objective(model: ConcreteModel, reward_for_child_staff_role: dict) -> Co
 
     # Penalize when children have two staff
     child_2_staff_hrs = sum([model.z_child_2_staff_hrs[time_block, child]
-                                          for time_block in model.TIME_BLOCKS
-                                          for child in model.CHILDREN])
+                                          for (time_block, child), _ in model.INDEX_DF.groupby(["Time Block", "Child"])])
     # Penalize switches
     child_switch_hrs = sum([model.z_switch[time_block, staff]
                                           for (time_block, staff), _ in model.INDEX_DF.groupby(["Time Block", "Staff"])])
