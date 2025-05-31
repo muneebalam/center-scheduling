@@ -7,26 +7,29 @@ import sys
 import subprocess
 
 # Get the original directory and cache
-BASE_FOLDER = "center_scheduling"
+BASE_FOLDER = "center-scheduling"
 KEYS = ["center_hours", "staff_child", "absences", "roles"]
 @st.cache_data
-def get_original_dir():
-    return os.getcwd()
-ORIGINAL_WD = get_original_dir()
-def get_catalog(env):
+def _get_original_dir():
+    cwd = os.getcwd()
+    if BASE_FOLDER not in cwd:
+        cwd = os.path.join(cwd, BASE_FOLDER)
+    return cwd
+ORIGINAL_WD = _get_original_dir()
+def _get_catalog(env):
     os.chdir(ORIGINAL_WD)
-    cat_path = os.path.join(ORIGINAL_WD, BASE_FOLDER, "conf", env, "catalog.yml")
+    cat_path = os.path.join("conf", env, "catalog.yml")
     assert os.path.exists(cat_path), f"Catalog not found at {cat_path}"
     with open(cat_path, "r") as f:
         return yaml.safe_load(f)
 @st.cache_data
-def get_original_catalog():
-    return get_catalog("base")
+def _get_original_catalog():
+    return _get_catalog("base")
 @st.cache_data
-def get_local_catalog():
-    return get_catalog("local")
+def _get_local_catalog():
+    return _get_catalog("local")
 @st.cache_data
-def get_example_data(catalog):
+def _get_example_data(catalog):
     example_data = {}
     for key in catalog:
         fpath = catalog[key]["filepath"]
@@ -39,7 +42,7 @@ def get_example_data(catalog):
 os.chdir(ORIGINAL_WD)
 ORIGINAL_CATALOG = _get_original_catalog()
 LOCAL_CATALOG = _get_local_catalog()
-example_data = get_example_data(ORIGINAL_CATALOG)
+example_data = _get_example_data(ORIGINAL_CATALOG)
 
 sys.path.append("center-scheduling")
 
