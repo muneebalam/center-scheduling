@@ -37,17 +37,15 @@ def _clean_start_end(model: ConcreteModel, row: pd.Series) -> tuple[int, int]:
 def add_pto_constraints(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
     if not constraint_on_off["pto"]:
         return model
-    model.pto_constraints = ConstraintList()
     pto = model.ABSENCES.pipe(lambda x: x[x.Type == "pto"])[["Name", "Day", "Start", "End"]]
     for _, row in pto.iterrows():
         start, end = _clean_start_end(model, row)
         if start >= end:
             continue
-        model.pto_constraints.add(
-            expr=sum(model.X[i, child, row["Name"]]
-                     for child in model.CHILDREN
-                     for i in range(start, end)) == 0
-        )
+        df = model.INDEX_DF[(model.INDEX_DF["Time Block"] >= start) & (model.INDEX_DF["Time Block"] < end)]
+        df = df[df["Staff"] == row["Name"]]
+        for _, row in df.iterrows():
+            model.X[row["Time Block"], row["Child"], row["Staff"]].fix(0)
     return model
 
 def add_parent_training_constraints(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
@@ -57,11 +55,10 @@ def add_parent_training_constraints(model: ConcreteModel, constraint_on_off: dic
     parent_training = model.ABSENCES.pipe(lambda x: x[x.Type.str.title() == "Parent Training"])[["Name", "Day", "Start", "End"]]
     for _, row in parent_training.iterrows():
         start, end = _clean_start_end(model, row)
-        model.parent_training_constraints.add(
-            expr=sum(model.X[i, child, row["Name"]]
-                     for child in model.CHILDREN
-                     for i in range(start, end)) == 0
-        )
+        df = model.INDEX_DF[(model.INDEX_DF["Time Block"] >= start) & (model.INDEX_DF["Time Block"] < end)]
+        df = df[df["Child"] == row["Name"]]
+        for _, row in df.iterrows():
+            model.X[row["Time Block"], row["Child"], row["Staff"]].fix(0)
     return model
 
 def add_team_meeting_constraints(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
@@ -73,12 +70,9 @@ def add_team_meeting_constraints(model: ConcreteModel, constraint_on_off: dict) 
         start, end = _clean_start_end(model, row)
         if start >= end:
             continue
-        model.team_meeting_constraints.add(
-            expr=sum(model.X[i, child, staff]
-                     for child in model.CHILDREN
-                     for staff in model.STAFF
-                     for i in range(start, end)) == 0
-        )
+        df = model.INDEX_DF[(model.INDEX_DF["Time Block"] >= start) & (model.INDEX_DF["Time Block"] < end)]
+        for _, row in df.iterrows():
+            model.X[row["Time Block"], row["Child"], row["Staff"]].fix(0)
     return model
 
 def add_nap_time_constraints(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
@@ -90,11 +84,10 @@ def add_nap_time_constraints(model: ConcreteModel, constraint_on_off: dict) -> C
         start, end = _clean_start_end(model, row)
         if start >= end:
             continue
-        model.nap_time_constraints.add(
-            expr=sum(model.X[i, row["Name"], staff]
-                     for staff in model.STAFF
-                     for i in range(start, end)) == 0
-        )
+        df = model.INDEX_DF[(model.INDEX_DF["Time Block"] >= start) & (model.INDEX_DF["Time Block"] < end)]
+        df = df[df["Child"] == row["Name"]]
+        for _, row in df.iterrows():
+            model.X[row["Time Block"], row["Child"], row["Staff"]].fix(0)
     return model
 
 def add_speech_therapy_constraints(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
@@ -106,11 +99,10 @@ def add_speech_therapy_constraints(model: ConcreteModel, constraint_on_off: dict
         start, end = _clean_start_end(model, row)
         if start >= end:
             continue
-        model.speech_constraints.add(
-            expr=sum(model.X[i, row["Name"], staff]
-                     for staff in model.STAFF
-                     for i in range(start, end)) == 0
-        )
+        df = model.INDEX_DF[(model.INDEX_DF["Time Block"] >= start) & (model.INDEX_DF["Time Block"] < end)]
+        df = df[df["Child"] == row["Name"]]
+        for _, row in df.iterrows():
+            model.X[row["Time Block"], row["Child"], row["Staff"]].fix(0)
     return model
 
 def add_arrival_departure_constraints(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
@@ -130,7 +122,8 @@ def add_arrival_departure_constraints(model: ConcreteModel, constraint_on_off: d
         if start >= end:
             continue
         for i in range(start, end):
-            for staff in model.STAFF:
+            df = model.INDEX_DF[(model.INDEX_DF["Time Block"] == i) & (model.INDEX_DF["Child"] == row["Name"])]
+            for staff in df.Staff:
                 model.X[i, row["Name"], staff].fix(0)
 
         #model.arrival_departure_constraints.add(
@@ -157,34 +150,28 @@ def center_hours_constraints(model: ConcreteModel, constraint_on_off: dict) -> C
         day = row["Day"]
         start_time = _24h_time_to_index(row["Open"])
         end_time = _24h_time_to_index(row["Close"])
-        for time_block in model.TIME_BLOCKS:
+        for time_block, df in model.INDEX_DF.groupby("Time Block"):
             if time_block < start_time or time_block >= end_time:
-                for child in model.CHILDREN:
-                    for staff in model.STAFF:
-                        model.X[time_block, child, staff].fix(0)
-                # Add constraints to the model
-                # model.center_hours_constraints.add(
-                #     expr=sum(model.X[day, time_block, child, staff]
-                #              for child in model.CHILDREN
-                #              for staff in model.STAFF) == 0
-                # )
+                for _, row in df.iterrows():
+                    model.X[time_block, row["Child"], row["Staff"]].fix(0)
     return model
 
 def add_staff_child_constraints(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
     if not constraint_on_off["staff_child"]:
         return model
-    model.staff_child_constraints = ConstraintList()
-    for child, staff_df in model.STAFF_CHILD.groupby("Child"):
-        acceptable_staff = staff_df.Staff
-        unacceptable_staff = model.STAFF[~pd.Series(model.STAFF).isin(acceptable_staff)]
-        for staff in unacceptable_staff:
-            for time_block in model.TIME_BLOCKS:
-                # Add constraints to the model
-                model.X[time_block, child, staff].fix(0)
-                # model.staff_child_constraints.add(
-                #     expr=model.X[time_block, child, staff] == 0
-                # )
     return model
+    # model.staff_child_constraints = ConstraintList()
+    # for child, staff_df in model.STAFF_CHILD.groupby("Child"):
+    #     acceptable_staff = staff_df.Staff
+    #     unacceptable_staff = model.STAFF[~pd.Series(model.STAFF).isin(acceptable_staff)]
+    #     for staff in unacceptable_staff:
+    #         for time_block in model.TIME_BLOCKS:
+    #             # Add constraints to the model
+    #             model.X[time_block, child, staff].fix(0)
+    #             # model.staff_child_constraints.add(
+    #             #     expr=model.X[time_block, child, staff] == 0
+    #             # )
+    # return model
 
 def add_one_place_per_time_constraint(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
     """
@@ -199,13 +186,11 @@ def add_one_place_per_time_constraint(model: ConcreteModel, constraint_on_off: d
     if not constraint_on_off["one_place_per_time"]:
         return model
     model.one_place_per_time = ConstraintList()
-    for time_block in model.TIME_BLOCKS:
-        for staff in model.STAFF:
-            # Add constraints to the model
-            model.one_place_per_time.add(
-                expr=sum(model.X[time_block, child, staff]
-                            for child in model.CHILDREN) <= 1
-            )
+    for (time_block, staff), df in model.INDEX_DF.groupby(["Time Block", "Staff"]):
+        model.one_place_per_time.add(
+            expr=sum(model.X[time_block, child, staff]
+                        for child in df.Child) <= 1
+        )
     return model
 
 
@@ -227,7 +212,7 @@ def add_lunch_constraints(model: ConcreteModel, constraint_on_off: dict) -> Conc
     span = lunch_end - lunch_start
 
     model.lunch_constraints = ConstraintList()
-    for staff in model.STAFF:
+    for staff, df in model.INDEX_DF.groupby("Staff"):
         time_range_req = [x for x in list(range(lunch_start, lunch_end))
                           if x in model.TIME_BLOCKS]
         if len(time_range_req) == 0:
@@ -235,6 +220,6 @@ def add_lunch_constraints(model: ConcreteModel, constraint_on_off: dict) -> Conc
         model.lunch_constraints.add(
                 expr=sum(model.X[time_block, child, staff]
                          for time_block in time_range_req
-                         for child in model.CHILDREN) <= span - 1
+                         for child in df.Child.unique()) <= span - 1
             )
     return model
