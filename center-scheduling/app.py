@@ -37,8 +37,8 @@ def get_example_data(catalog):
     return example_data
 
 os.chdir(ORIGINAL_WD)
-ORIGINAL_CATALOG = get_original_catalog()
-LOCAL_CATALOG = get_local_catalog()
+ORIGINAL_CATALOG = _get_original_catalog()
+LOCAL_CATALOG = _get_local_catalog()
 example_data = get_example_data(ORIGINAL_CATALOG)
 
 sys.path.append("center-scheduling")
