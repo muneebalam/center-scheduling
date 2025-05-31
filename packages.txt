@@ -1,4 +1,7 @@
 glpk-utils
 libglpk-dev
 glpk-doc
-python-glpk
+python3-swiglpk
+libglpk40
+coinor-cbc 
+coinor-libcbc-dev
