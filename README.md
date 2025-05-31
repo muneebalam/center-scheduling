@@ -29,3 +29,5 @@ If you install another package:
 `uv add mypackage`
 
 `uv lock`
+
+`uv pip compile pyproject.toml -o requirements.txt`
