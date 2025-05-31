@@ -7,7 +7,7 @@ import sys
 import subprocess
 
 # Get the original directory and cache
-BASE_FOLDER = "center-scheduling"
+BASE_FOLDER = "center_scheduling"
 KEYS = ["center_hours", "staff_child", "absences", "roles"]
 @st.cache_data
 def get_original_dir():
@@ -15,7 +15,7 @@ def get_original_dir():
 ORIGINAL_WD = get_original_dir()
 def get_catalog(env):
     os.chdir(ORIGINAL_WD)
-    cat_path = os.path.join(ORIGINAL_WD, "conf", env, "catalog.yml")
+    cat_path = os.path.join(ORIGINAL_WD, BASE_FOLDER, "conf", env, "catalog.yml")
     with open(cat_path, "r") as f:
         return yaml.safe_load(f)
 @st.cache_data
