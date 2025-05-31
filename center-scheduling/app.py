@@ -8,40 +8,47 @@ from kedro.framework.session import KedroSession
 from kedro.framework.startup import bootstrap_project
 from pathlib import Path
 
-sys.path.append("center-scheduling")
-
-
-st.title("Center Scheduling")
-
-st.write("This is a web app to schedule staff for a center.")
-
-st.write("Upload the center data to get started.")
-
-uploaded_file = st.file_uploader("Upload the center data", type="xlsx")
+# Get the original directory and cache
 
 BASE_FOLDER = "center-scheduling"
+KEYS = ["center_hours", "staff_child", "absences", "roles"]
+@st.cache_data
+def get_original_dir():
+    return os.getcwd()
+@st.cache_data
+def get_original_catalog():
+    with open(os.path.join(BASE_FOLDER, "conf/base/catalog.yml"), "r") as f:
+        return yaml.safe_load(f)
+@st.cache_data
+def get_example_data(catalog):
+    example_data = {}
+    for key in catalog:
+        fpath = catalog[key]["filepath"]
+        if "01_raw" in fpath:
+            sheet_name = catalog[key]["load_args"]["sheet_name"]
+            example_data[sheet_name] = pd.read_excel(os.path.join(BASE_FOLDER, fpath), 
+                                                    sheet_name=sheet_name)
+    return example_data
 
-with open(os.path.join(BASE_FOLDER, "conf/base/catalog.yml"), "r") as f:
-    catalog = yaml.safe_load(f)
+ORIGINAL_WD = get_original_dir()
+os.chdir(ORIGINAL_WD)
+ORIGINAL_CATALOG = get_original_catalog()
 
-example_data = {}
+sys.path.append("center-scheduling")
+st.title("Center Scheduling")
+st.write("This is a web app to schedule staff for a center.")
+st.write("Upload the center data to get started.")
+uploaded_file = st.file_uploader("Upload the center data", type="xlsx")
+
+example_data = get_example_data(ORIGINAL_CATALOG)
 new_data = {}
 
-# Read the example files
-for key in catalog:
-    fpath = catalog[key]["filepath"]
-    if "01_raw" in fpath:
-        sheet_name = catalog[key]["load_args"]["sheet_name"]
-        example_data[sheet_name] = pd.read_excel(os.path.join(BASE_FOLDER, fpath), 
-                                                sheet_name=sheet_name)
-    
 if uploaded_file is not None:
     # First, read required tabs
     multiframe = {}
-    keys = ["center_hours", "staff_child", "absences", "roles"]
 
-    for key in keys:
-        sheet_name = catalog[key]["load_args"]["sheet_name"]
+    for key in KEYS:
+        sheet_name = ORIGINAL_CATALOG[key]["load_args"]["sheet_name"]
         multiframe[sheet_name] = pd.read_excel(uploaded_file, sheet_name=sheet_name)
 
     # Then, save the data to the local (not base) catalog
@@ -68,11 +75,13 @@ for k, v in example_data.items():
 # If you are creating a session outside of a Kedro project (i.e. not using
 # `kedro run` or `kedro jupyter`), you need to run `bootstrap_project` to
 # let Kedro find your configuration.
-bootstrap_project(Path(BASE_FOLDER))
+#bootstrap_project(Path(BASE_FOLDER))
 env_selection = st.selectbox("Select environment", ["example", "uploaded"])
 env_to_run = {"example": "base", "uploaded": "local"}[env_selection]
 if st.button("Run pipeline"):
     with st.spinner("Running pipeline..."):
-        with KedroSession.create(BASE_FOLDER, env=env_to_run) as session:
-            session.run()
+        os.chdir(ORIGINAL_WD)
+        os.system(f"cd center-scheduling && uv run kedro run --env={env_to_run}")
+        #with KedroSession.create(BASE_FOLDER, env=env_to_run) as session:
+        #    session.run()
             
