@@ -129,11 +129,15 @@ def add_arrival_departure_constraints(model: ConcreteModel, constraint_on_off: d
         start, end = _clean_start_end(model, row)
         if start >= end:
             continue
-        model.arrival_departure_constraints.add(
-            expr=sum(model.X[i, row["Name"], staff]
-                     for staff in model.STAFF
-                     for i in range(start, end)) == 0
-        )
+        for i in range(start, end):
+            for staff in model.STAFF:
+                model.X[i, row["Name"], staff].fix(0)
+
+        #model.arrival_departure_constraints.add(
+        #    expr=sum(model.X[i, row["Name"], staff]
+        #             for staff in model.STAFF
+        #             for i in range(start, end)) == 0
+        #)
     return model
 
 def center_hours_constraints(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
@@ -155,12 +159,15 @@ def center_hours_constraints(model: ConcreteModel, constraint_on_off: dict) -> C
         end_time = _24h_time_to_index(row["Close"])
         for time_block in model.TIME_BLOCKS:
             if time_block < start_time or time_block >= end_time:
+                for child in model.CHILDREN:
+                    for staff in model.STAFF:
+                        model.X[time_block, child, staff].fix(0)
                 # Add constraints to the model
-                model.center_hours_constraints.add(
-                    expr=sum(model.X[day, time_block, child, staff]
-                             for child in model.CHILDREN
-                             for staff in model.STAFF) == 0
-                )
+                # model.center_hours_constraints.add(
+                #     expr=sum(model.X[day, time_block, child, staff]
+                #              for child in model.CHILDREN
+                #              for staff in model.STAFF) == 0
+                # )
     return model
 
 def add_staff_child_constraints(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:
@@ -173,9 +180,10 @@ def add_staff_child_constraints(model: ConcreteModel, constraint_on_off: dict) -
         for staff in unacceptable_staff:
             for time_block in model.TIME_BLOCKS:
                 # Add constraints to the model
-                model.staff_child_constraints.add(
-                    expr=model.X[time_block, child, staff] == 0
-                )
+                model.X[time_block, child, staff].fix(0)
+                # model.staff_child_constraints.add(
+                #     expr=model.X[time_block, child, staff] == 0
+                # )
     return model
 
 def add_one_place_per_time_constraint(model: ConcreteModel, constraint_on_off: dict) -> ConcreteModel:

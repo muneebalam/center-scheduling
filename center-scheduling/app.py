@@ -13,11 +13,17 @@ KEYS = ["center_hours", "staff_child", "absences", "roles"]
 def get_original_dir():
     return os.getcwd()
 ORIGINAL_WD = get_original_dir()
+def get_catalog(env):
+    os.chdir(ORIGINAL_WD)
+    cat_path = os.path.join(ORIGINAL_WD, "conf", env, "catalog.yml")
+    with open(cat_path, "r") as f:
+        return yaml.safe_load(f)
 @st.cache_data
 def get_original_catalog():
-    os.chdir(ORIGINAL_WD)
-    with open("conf/base/catalog.yml", "r") as f:
-        return yaml.safe_load(f)
+    return get_catalog("base")
+@st.cache_data
+def get_local_catalog():
+    return get_catalog("local")
 @st.cache_data
 def get_example_data(catalog):
     example_data = {}
@@ -31,7 +37,7 @@ def get_example_data(catalog):
 
 os.chdir(ORIGINAL_WD)
 ORIGINAL_CATALOG = get_original_catalog()
-LOCAL_CATALOG = "conf/local/catalog.yml"
+LOCAL_CATALOG = get_local_catalog()
 example_data = get_example_data(ORIGINAL_CATALOG)
 
 sys.path.append("center-scheduling")
