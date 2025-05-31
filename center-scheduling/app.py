@@ -122,6 +122,7 @@ with st.container(border=True):
                 st.dataframe(result)
         with res_tabs[-1]:
             st.markdown("## Run log")
+            st.write(" ".join(os.listdir(os.path.join(NEEDED_WD, "data", "08_reporting"))))
             # if process is not None:
             #     while process.poll() is None:
             #         line = process.stdout.readline()
