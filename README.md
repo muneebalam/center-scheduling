@@ -6,13 +6,17 @@
 
 `uv sync`
 
+You may also need
+
+`conda install glpk`
+
 # Development
 
 `conda activate sch`
 
-`kedro run`
+`uv run kedro run --env=base`
 
-`streamlit run app.py`
+`uv run streamlit run app.py`
 
 If you install another package:
 
