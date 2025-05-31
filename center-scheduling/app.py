@@ -7,6 +7,7 @@ import sys
 from kedro.framework.session import KedroSession
 from kedro.framework.startup import bootstrap_project
 from pathlib import Path
+import numpy as np
 
 # Get the original directory and cache
 BASE_FOLDER = "center-scheduling"
@@ -33,56 +34,87 @@ def get_example_data(catalog):
 
 os.chdir(ORIGINAL_WD)
 ORIGINAL_CATALOG = get_original_catalog()
+LOCAL_CATALOG = "conf/local/catalog.yml"
+example_data = get_example_data(ORIGINAL_CATALOG)
 
 sys.path.append("center-scheduling")
+
 st.title("Center Scheduling")
 st.write("This is a web app to schedule staff for a center.")
-st.write("Upload the center data to get started.")
-uploaded_file = st.file_uploader("Upload the center data", type="xlsx")
 
-example_data = get_example_data(ORIGINAL_CATALOG)
-new_data = {}
+with st.container(border=True):
+    st.markdown("# Setup")
+    st.write("Upload the center data to get started.")
+    uploaded_file = st.file_uploader("Upload the center data", type="xlsx")
+    new_data = {}
 
-# If the user uploads a file, read it and save it to the local catalog
-if uploaded_file is not None:
-    # First, read required tabs
-    multiframe = {}
+    # If the user uploads a file, read it and save it to the local catalog
+    if uploaded_file is not None:
+        # First, read required tabs
+        multiframe = {}
 
-    for key in KEYS:
-        sheet_name = ORIGINAL_CATALOG[key]["load_args"]["sheet_name"]
-        multiframe[sheet_name] = pd.read_excel(uploaded_file, sheet_name=sheet_name)
+        for key in KEYS:
+            sheet_name = ORIGINAL_CATALOG[key]["load_args"]["sheet_name"]
+            multiframe[sheet_name] = pd.read_excel(uploaded_file, sheet_name=sheet_name)
 
-    # Then, save the data to the local (not base) catalog
-    local_catalog = "conf/local/catalog.yml"
-    fpath = local_catalog["center_hours"]["filepath"]
-    dataset = ExcelDataset(filepath=fpath, load_args = {"sheet_name": None})
-    dataset.save(multiframe)
-    st.write("Upload successful")
+        # Then, save the data to the local (not base) catalog
+        fpath = LOCAL_CATALOG["center_hours"]["filepath"]
+        dataset = ExcelDataset(filepath=fpath, load_args = {"sheet_name": None})
+        dataset.save(multiframe)
+        st.write("Upload successful")
 
-    for key in local_catalog:
-        fpath = local_catalog[key]["filepath"]
-        if "01_raw" in fpath:
-            sheet_name = local_catalog[key]["load_args"]["sheet_name"]
-            new_data[sheet_name] = pd.read_excel(fpath, 
-                                                sheet_name=sheet_name)
+        for key in LOCAL_CATALOG:
+            fpath = LOCAL_CATALOG[key]["filepath"]
+            if "01_raw" in fpath:
+                sheet_name = LOCAL_CATALOG[key]["load_args"]["sheet_name"]
+                new_data[sheet_name] = pd.read_excel(fpath, 
+                                                    sheet_name=sheet_name)
 
-for k, v in example_data.items():
-    with st.expander(f"Example {k}"):
-        st.dataframe(v, hide_index=True)
-    if k in new_data:
-        with st.expander(f"Uploaded {k}"):
-            st.dataframe(new_data[k], hide_index=True)
+    for k, v in example_data.items():
+        with st.expander(f"Example {k}"):
+            st.dataframe(v, hide_index=True)
+        if k in new_data:
+            with st.expander(f"Uploaded {k}"):
+                st.dataframe(new_data[k], hide_index=True)
 
-# If you are creating a session outside of a Kedro project (i.e. not using
-# `kedro run` or `kedro jupyter`), you need to run `bootstrap_project` to
-# let Kedro find your configuration.
-#bootstrap_project(Path(BASE_FOLDER))
-env_selection = st.selectbox("Select environment", ["example", "uploaded"])
-env_to_run = {"example": "base", "uploaded": "local"}[env_selection]
-if st.button("Run pipeline"):
-    with st.spinner("Running pipeline..."):
-        os.chdir(ORIGINAL_WD)
-        os.system(f"uv run kedro run --env={env_to_run}")
-        #with KedroSession.create(BASE_FOLDER, env=env_to_run) as session:
-        #    session.run()
-            
+    # If you are creating a session outside of a Kedro project (i.e. not using
+    # `kedro run` or `kedro jupyter`), you need to run `bootstrap_project` to
+    # let Kedro find your configuration.
+    #bootstrap_project(Path(BASE_FOLDER))
+    env_selection = st.selectbox("Select environment", ["example", "uploaded"])
+    env_to_run = {"example": "base", "uploaded": "local"}[env_selection]
+    if st.button("Run pipeline"):
+        with st.spinner("Running pipeline..."):
+            os.chdir(ORIGINAL_WD)
+            os.system(f"uv run kedro run --env={env_to_run}")
+
+def _apply_bg_color(elem):
+    if elem is None or elem == "" or pd.isnull(elem):
+        return "background-color: white"
+    
+    assert isinstance(elem, str), f"Expected string, got {elem}"
+    font_color = "white" if "dark" in elem else "black"
+
+    color_replacements = {"darkdarkblue": "midnightblue", "darkpurple": "indigo", 
+                        "lightpurple": "mediumpurple", "darkpink": "mediumvioletred", 
+                        "paleyellow": "lemonchiffon", "lightorange": "bisque", }
+    if elem in color_replacements:
+        elem = color_replacements[elem]
+    return_str = f"background-color: {elem}; color: {font_color}"
+    return return_str
+
+with st.container(border=True):
+    st.markdown("# Results")
+
+    res_tabs = st.tabs(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
+    try:
+        results = [pd.read_csv(f"data/08_reporting/d{i}_solution.csv") for i in range(1, 6)]
+        res_styled = [result.drop("Day", axis=1)
+                        .set_index("Time Block")
+                        .style.applymap(_apply_bg_color) for result in results]
+        for i, result in enumerate(res_styled):
+            with res_tabs[i]:
+                st.dataframe(result)
+    except FileNotFoundError:
+        pass
+                
