@@ -581,6 +581,7 @@ wheels = [
 
 [[package]]
 name = "center-scheduling"
+version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "arabic-reshaper" },
