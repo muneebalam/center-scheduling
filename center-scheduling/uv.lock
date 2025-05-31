@@ -579,41 +579,7 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/72/76/20fa66124dbe6be5cafeb312ece67de6b61dd91a0247d1ea13db4ebb33c2/cachetools-5.5.2-py3-none-any.whl", hash = "sha256:d26a22bcc62eb95c3beabd9f1ee5e820d3d2704fe2967cbe350e20c8ffcd3f0a", size = 10080, upload-time = "2025-02-20T21:01:16.647Z" },
 ]
 
-[[package]]
-name = "center-scheduling"
-source = { editable = "." }
-dependencies = [
-    { name = "arabic-reshaper" },
-    { name = "ipython", version = "8.12.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "ipython", version = "8.18.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.9.*'" },
-    { name = "ipython", version = "8.36.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
-    { name = "jupyter" },
-    { name = "jupyterlab", version = "4.3.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "jupyterlab", version = "4.4.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
-    { name = "kedro", version = "0.19.8", source = { registry = "https://pypi.org/simple" }, extra = ["jupyter"], marker = "python_full_version < '3.9'" },
-    { name = "kedro", version = "0.19.13", source = { registry = "https://pypi.org/simple" }, extra = ["jupyter"], marker = "python_full_version >= '3.9'" },
-    { name = "kedro-datasets", version = "1.8.0", source = { registry = "https://pypi.org/simple" }, extra = ["matplotlib-matplotlibwriter", "pandas-csvdataset", "pandas-exceldataset", "pandas-parquetdataset", "plotly-jsondataset", "plotly-plotlydataset"], marker = "python_full_version < '3.9'" },
-    { name = "kedro-datasets", version = "4.1.0", source = { registry = "https://pypi.org/simple" }, extra = ["matplotlib-matplotlibwriter", "pandas-csvdataset", "pandas-exceldataset", "pandas-parquetdataset", "plotly-jsondataset", "plotly-plotlydataset"], marker = "python_full_version == '3.9.*'" },
-    { name = "kedro-datasets", version = "7.0.0", source = { registry = "https://pypi.org/simple" }, extra = ["matplotlib-matplotlibwriter", "pandas-csvdataset", "pandas-exceldataset", "pandas-parquetdataset", "plotly-jsondataset", "plotly-plotlydataset"], marker = "python_full_version >= '3.10'" },
-    { name = "kedro-viz", version = "7.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "kedro-viz", version = "11.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
-    { name = "notebook", version = "7.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "notebook", version = "7.4.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
-    { name = "openpyxl" },
-    { name = "pandas", version = "2.0.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "pandas", version = "2.2.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
-    { name = "pillow", version = "10.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "pillow", version = "11.2.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
-    { name = "pyomo", version = "6.8.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "pyomo", version = "6.9.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
-    { name = "pyyaml" },
-    { name = "scikit-learn", version = "1.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "scikit-learn", version = "1.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
-    { name = "seaborn" },
-    { name = "streamlit", version = "1.40.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "streamlit", version = "1.45.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
-    { name = "tqdm" },
-]
+
 
 [package.optional-dependencies]
 dev = [
