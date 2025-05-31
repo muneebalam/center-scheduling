@@ -17,7 +17,6 @@ ORIGINAL_WD = _get_original_dir()
 def _get_catalog(env):
     os.chdir(ORIGINAL_WD)
     cat_path = os.path.join(BASE_FOLDER, "conf", env, "catalog.yml")
-    assert os.path.exists(cat_path), f"Catalog not found at {cat_path}; {os.listdir(f"{BASE_FOLDER}/conf/{env}")}"
     with open(cat_path, "r") as f:
         return yaml.safe_load(f)
 @st.cache_data
@@ -29,8 +28,9 @@ def _get_local_catalog():
 @st.cache_data
 def _get_example_data(catalog):
     example_data = {}
+    os.chdir(ORIGINAL_WD)
     for key in catalog:
-        fpath = catalog[key]["filepath"]
+        fpath = os.path.join(BASE_FOLDER, catalog[key]["filepath"])
         if "01_raw" in fpath:
             sheet_name = catalog[key]["load_args"]["sheet_name"]
             example_data[sheet_name] = pd.read_excel(fpath, 
@@ -64,13 +64,13 @@ with st.container(border=True):
             multiframe[sheet_name] = pd.read_excel(uploaded_file, sheet_name=sheet_name)
 
         # Then, save the data to the local (not base) catalog
-        fpath = LOCAL_CATALOG["center_hours"]["filepath"]
+        fpath = os.path.join(BASE_FOLDER, LOCAL_CATALOG["center_hours"]["filepath"])
         dataset = ExcelDataset(filepath=fpath, load_args = {"sheet_name": None})
         dataset.save(multiframe)
         st.write("Upload successful")
 
         for key in LOCAL_CATALOG:
-            fpath = LOCAL_CATALOG[key]["filepath"]
+            fpath = os.path.join(BASE_FOLDER, LOCAL_CATALOG[key]["filepath"])
             if "01_raw" in fpath:
                 sheet_name = LOCAL_CATALOG[key]["load_args"]["sheet_name"]
                 new_data[sheet_name] = pd.read_excel(fpath, 
