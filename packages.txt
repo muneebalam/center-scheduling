@@ -1,0 +1,4 @@
+glpk-utils
+libglpk-dev
+glpk-doc
+python-glpk
