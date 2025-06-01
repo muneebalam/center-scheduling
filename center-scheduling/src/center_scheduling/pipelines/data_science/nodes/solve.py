@@ -1,6 +1,3 @@
-import logging
-logger = logging.getLogger(__name__)
-
 import pandas as pd
 from pyomo.environ import (
     ConcreteModel, Var, Constraint, Objective, SolverFactory, Set, Binary,
@@ -29,11 +26,6 @@ def solve(model: ConcreteModel) -> ConcreteModel:
     # Solve with optimized settings
     results = solver.solve(model, tee=True)
     
-    # Check if solution was found
-    if results.solver.termination_condition != 'optimal':
-        logger.warning(f"Solution not optimal: {results.solver.termination_condition}")
-    
-
     return model
 
 def print_solution(model: ConcreteModel) -> pd.DataFrame:

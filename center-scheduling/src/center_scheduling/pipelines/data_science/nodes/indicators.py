@@ -1,6 +1,3 @@
-import logging
-logger = logging.getLogger(__name__)
-
 import pandas as pd
 from pyomo.environ import (
     ConcreteModel, Var, Constraint, Objective, SolverFactory, Set, Binary,
