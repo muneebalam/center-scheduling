@@ -118,30 +118,34 @@ with st.container(border=True):
 
     refresh_button = st.button("Refresh results")
     if refresh_button:
+        all_results = []
+        for i in range(len(res_tabs) - 1):
+            with res_tabs[i]:
+                try:
+                    result = pd.read_csv(os.path.join(NEEDED_WD, "data", "08_reporting", f"d{i}_solution.csv"))
+                    all_results.append(result)
+                    styled = (
+                        result
+                        .drop("Day", axis=1)
+                        .set_index("Time Block")
+                    .style.applymap(_apply_bg_color)
+                )
+                    st.dataframe(styled)
+                except FileNotFoundError:
+                    st.write("No results yet")
+        
         try:
-            results = [pd.read_csv(os.path.join(NEEDED_WD, "data", "08_reporting", f"d{i}_solution.csv")) for i in range(1, 6)]
-            res_styled = [result.drop("Day", axis=1)
-                            .set_index("Time Block")
-                            .style.applymap(_apply_bg_color) for result in results]
+            results = pd.concat(all_results)
+            csv = results.to_csv(index=False).encode('utf-8')
 
-            csv = pd.concat(results).to_csv(index=False).encode('utf-8')
-
-            st.download_button(
-                "Download",
-                csv,
-                "solution.csv",
-                "text/csv",
-                key='download-csv'
-            )
-            for i, result in enumerate(res_styled):
-                with res_tabs[i]:
-                    st.dataframe(result)
-                # if process is not None:
-                #     while process.poll() is None:
-                #         line = process.stdout.readline()
-                #         if not line:
-                #             continue
-                #         st.write(line.strip())
+            if len(all_results) == 5:
+                st.download_button(
+                    "Download",
+                    csv,
+                    "solution.csv",
+                    "text/csv",
+                    key='download-csv'
+                )
         except FileNotFoundError:
-            st.write("No results yet")
+            st.write("No compiled results yet")
                 
