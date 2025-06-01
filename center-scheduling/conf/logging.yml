@@ -1,3 +1,5 @@
+version: 1
+
 handlers:
   info_file_handler:
     class: logging.handlers.RotatingFileHandler
