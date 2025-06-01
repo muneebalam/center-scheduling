@@ -83,14 +83,6 @@ with st.container(border=True):
 
     env_selection = st.selectbox("Select environment", ["example", "uploaded"])
     env_to_run = {"example": "base", "uploaded": "local"}[env_selection]
-    if st.button("Run pipeline"):
-        with st.spinner("Running pipeline..."):
-            command = ["uv", "run", "kedro", "run", f"--env={env_to_run}"]
-            #if NEEDED_WD != ORIGINAL_WD:
-            #    command = ["cd", BASE_FOLDER, "&&"] + command
-            os.system(" ".join(command))
-            #process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-            #process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
 
 
 def _apply_bg_color(elem):
@@ -108,21 +100,28 @@ def _apply_bg_color(elem):
     return_str = f"background-color: {elem}; color: {font_color}"
     return return_str
 
+if st.button("Run pipeline"):
+    command = ["uv", "run", "kedro", "run", f"--env={env_to_run}"]
+    with open("test.log", "wb") as f:
+        process = subprocess.Popen(command, stdout=subprocess.PIPE)
+        for c in iter(lambda: process.stdout.read(1), b""):
+            f.write(c)
+
+with st.expander("Live log"):
+    if os.path.exists("test.log"):
+        with open("test.log", "r") as f:
+            for line in f:
+                st.write(line)
+
 with st.container(border=True):
     st.markdown("# Results")
-
-    res_tabs = st.tabs(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Log"])
-    with res_tabs[-1]:
-        st.markdown("## Run log")
-        st.write(" ".join(os.listdir(os.path.join(NEEDED_WD, "data", "08_reporting"))))
-
-    refresh_button = st.button("Refresh results")
-    if refresh_button:
+    if st.button("Refresh results"):
+        res_tabs = st.tabs(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
         all_results = []
-        for i in range(len(res_tabs) - 1):
+        for i in range(len(res_tabs)):
             with res_tabs[i]:
                 try:
-                    result = pd.read_csv(os.path.join(NEEDED_WD, "data", "08_reporting", f"d{i}_solution.csv"))
+                    result = pd.read_csv(os.path.join(NEEDED_WD, "data", "08_reporting", f"d{i+1}_solution.csv"))
                     all_results.append(result)
                     styled = (
                         result
