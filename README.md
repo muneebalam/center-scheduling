@@ -1,5 +1,9 @@
 # Introduction
 
+See site on [Streamlit Community Cloud](https://center-scheduling-llfb.streamlit.app/)
+
+ANONYMIZE ALL NAMES BEFORE UPLOADING FILES.
+
 # Installation
 
 `conda env create --name sch python=3.10`
