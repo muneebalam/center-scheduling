@@ -57,3 +57,11 @@ namespaces = false
 
 [tool.kedro_telemetry]
 project_id = "7a7325f799474bf2b45f76e937a43380"
+
+[tool.uv.sources]
+center-scheduling = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "center-scheduling",
+]

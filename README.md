@@ -2,7 +2,7 @@
 
 # Installation
 
-`conda env create --name sch python=3.8`
+`conda env create --name sch python=3.10`
 
 `uv sync`
 
