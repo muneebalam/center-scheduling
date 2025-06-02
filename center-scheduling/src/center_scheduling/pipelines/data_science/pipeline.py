@@ -132,5 +132,5 @@ def _base_opt_pipeline(day: int) -> Pipeline:
     )
 
 def create_pipeline(**kwargs) -> Pipeline:
-    myrange = range(1, 2)
+    myrange = range(1, 6)
     return pipeline([_base_opt_pipeline(day=d) for d in myrange])
