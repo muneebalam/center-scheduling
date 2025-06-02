@@ -3,7 +3,7 @@ requires = [ "setuptools",]
 build-backend = "setuptools.build_meta"
 
 [project]
-requires-python = "==3.10"
+requires-python = "==3.10.*"
 name = "center_scheduling"
 readme = "README.md"
 dynamic = [ "version",]
