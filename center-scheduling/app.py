@@ -110,12 +110,13 @@ if st.button("Run pipeline"):
     os.chdir(ORIGINAL_WD)
 
 with st.expander("Live log"):
-    st.write(ORIGINAL_WD)
-    st.write(NEEDED_WD)
-    if os.path.exists("test.log"):
-        with open("test.log", "r") as f:
-            for line in f:
-                st.write(line)
+    for folder in [ORIGINAL_WD, NEEDED_WD]:
+        fname = os.path.join(folder, "test.log")
+        if os.path.exists(fname):
+            with open(fname, "r") as f:
+                for line in f:
+                    st.write(line)
+            break
 
 with st.container(border=True):
     st.markdown("# Results")
