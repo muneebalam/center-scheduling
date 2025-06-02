@@ -349,7 +349,7 @@ wheels = [
 
 [[package]]
 name = "center-scheduling"
-source = { editable = "." }
+source = { virtual = "." }
 version = "0.1.0"
 dependencies = [
     { name = "arabic-reshaper" },
