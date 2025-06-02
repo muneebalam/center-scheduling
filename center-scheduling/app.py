@@ -102,7 +102,7 @@ def _apply_bg_color(elem):
 
 if st.button("Run pipeline"):
     os.chdir(NEEDED_WD)
-    command = ["uv", "run", "kedro", "run", f"--env={env_to_run}"]
+    command = ["uv", "run", "kedro", "run", f"--env={env_to_run}", "--runner", "ParallelRunner"]
     with open("test.log", "wb") as f:
         process = subprocess.Popen(command, stdout=subprocess.PIPE)
         for c in iter(lambda: process.stdout.read(1), b""):
